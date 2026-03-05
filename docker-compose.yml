@@ -11,9 +11,13 @@ services:
     environment:
       - UID=${UID}
       - GID=${GID}
+      - DISPLAY=${DISPLAY}
+      - XDG_RUNTIME_DIR=/tmp/runtime-${UID}
     user: "${UID}:${GID}"
     volumes:
       - ./:/fosic/designs/croc
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - /tmp/runtime-${UID}:/tmp/runtime-${UID}
     stdin_open: true
     tty: true
     working_dir: /fosic/designs/croc
