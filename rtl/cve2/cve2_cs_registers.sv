@@ -21,7 +21,6 @@ module cve2_cs_registers #(
   parameter bit               PMPEnable         = 0,
   parameter int unsigned      PMPGranularity    = 0,
   parameter int unsigned      PMPNumRegions     = 4,
-  parameter bit               RV32E             = 0,
   parameter cve2_pkg::rv32m_e RV32M             = cve2_pkg::RV32MFast,
   parameter cve2_pkg::rv32b_e RV32B             = cve2_pkg::RV32BNone
 ) (
@@ -29,6 +28,8 @@ module cve2_cs_registers #(
   // Clock and Reset
   input  logic                 clk_i,
   input  logic                 rst_ni,
+
+  input  logic                 rv32e_mode_i,
 
   // Hart ID
   input  logic [31:0]          hart_id_i,
@@ -112,20 +113,22 @@ import cve2_pkg::*;
   localparam int unsigned PMPAddrWidth = (PMPGranularity > 0) ? 33 - PMPGranularity : 32;
 
   // misa
-  localparam logic [31:0] MISA_VALUE =
-      (0                 <<  0)  // A - Atomic Instructions extension
-    | (RV32BEnabled      <<  1)  // B - Bit-Manipulation extension
-    | (1                 <<  2)  // C - Compressed extension
-    | (0                 <<  3)  // D - Double precision floating-point extension
-    | (32'(RV32E)        <<  4)  // E - RV32E base ISA
-    | (0                 <<  5)  // F - Single precision floating-point extension
-    | (32'(!RV32E)       <<  8)  // I - RV32I/64I/128I base ISA
-    | (RV32MEnabled      << 12)  // M - Integer Multiply/Divide extension
-    | (0                 << 13)  // N - User level interrupts supported
-    | (0                 << 18)  // S - Supervisor mode implemented
-    | (1                 << 20)  // U - User mode implemented
-    | (0                 << 23)  // X - Non-standard extensions present
-    | (32'(CSR_MISA_MXL) << 30); // M-XLEN
+  logic [31:0] misa_value;
+
+  assign misa_value =
+        (0                 <<  0)  // A - Atomic Instructions extension
+      | (RV32BEnabled      <<  1)  // B - Bit-Manipulation extension
+      | (1                 <<  2)  // C - Compressed extension
+      | (0                 <<  3)  // D - Double precision floating-point extension
+      | (rv32e_mode_i      <<  4)  // E - RV32E base ISA
+      | (0                 <<  5)  // F - Single precision floating-point extension
+      | ((!rv32e_mode_i)   <<  8)  // I - RV32I/64I/128I base ISA
+      | (RV32MEnabled      << 12)  // M - Integer Multiply/Divide extension
+      | (0                 << 13)  // N - User level interrupts supported
+      | (0                 << 18)  // S - Supervisor mode implemented
+      | (1                 << 20)  // U - User mode implemented
+      | (0                 << 23)  // X - Non-standard extensions present
+      | (32'(CSR_MISA_MXL) << 30); // M-XLEN
 
   typedef struct packed {
     logic      mie;
@@ -295,7 +298,7 @@ import cve2_pkg::*;
       CSR_MENVCFG, CSR_MENVCFGH: csr_rdata_int = '0;
 
       // misa
-      CSR_MISA: csr_rdata_int = MISA_VALUE;
+      CSR_MISA: csr_rdata_int = misa_value;
 
       // interrupt enable
       CSR_MIE: begin
@@ -1552,7 +1555,7 @@ import cve2_pkg::*;
    `RVFI_CONNECT( CSR_MSTATUS,          mstatus                     ,  mstatus_extended_read  , mstatus_extended_write , , || mstatus_en)
    `RVFI_CONNECT( CSR_MIE,              mie                         ,  mie_extended_read      , mie_extended_write     , , || mie_en    )
    `RVFI_CONNECT( CSR_MIP,              mip                         ,  mip_extended_read      , mip_extended_read      , , )
-   `RVFI_CONNECT( CSR_MISA,             misa                        ,  MISA_VALUE             , MISA_VALUE             , ,              )
+   `RVFI_CONNECT( CSR_MISA,             misa                        ,  misa_value             , misa_value             , ,              )
    `RVFI_CONNECT( CSR_MTVEC,            mtvec                       ,  mtvec_q                , mtvec_d                , , || mtvec_en  )
    `RVFI_CONNECT( CSR_MEPC,             mepc                        ,  mepc_q                 , mepc_d                 , , || mepc_en   )
    `RVFI_CONNECT( CSR_MCAUSE,           mcause                      ,  mcause_extended_read   , mcause_extended_write  , , || mcause_en )

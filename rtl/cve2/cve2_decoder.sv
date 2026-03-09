@@ -15,13 +15,14 @@
 `include "common_cells/assertions.svh"
 
 module cve2_decoder #(
-  parameter bit RV32E               = 0,
   parameter cve2_pkg::rv32m_e RV32M = cve2_pkg::RV32MFast,
   parameter cve2_pkg::rv32b_e RV32B = cve2_pkg::RV32BNone,
   parameter bit               XInterface    = 1'b0
 ) (
   input  logic                 clk_i,
   input  logic                 rst_ni,
+
+  input  logic                 rv32e_mode_i,
 
   // to/from controller
   output logic                 illegal_insn_o,        // illegal instr encountered
@@ -177,12 +178,14 @@ module cve2_decoder #(
   ////////////////////
   // Register check //
   ////////////////////
-  if (RV32E) begin : gen_rv32e_reg_check_active
-    assign illegal_reg_rv32e = ((rf_raddr_a_o[4] & (alu_op_a_mux_sel_o == OP_A_REG_A)) |
-                                (rf_raddr_b_o[4] & (alu_op_b_mux_sel_o == OP_B_REG_B)) |
-                                (rf_waddr_o[4]   & rf_we));
-  end else begin : gen_rv32e_reg_check_inactive
-    assign illegal_reg_rv32e = 1'b0;
+  always_comb begin
+    if (rv32e_mode_i) begin
+      illegal_reg_rv32e = ((rf_raddr_a_o[4] & (alu_op_a_mux_sel_o == OP_A_REG_A)) |
+                           (rf_raddr_b_o[4] & (alu_op_b_mux_sel_o == OP_B_REG_B)) |
+                           (rf_waddr_o[4]   & rf_we));
+    end else begin
+      illegal_reg_rv32e = 1'b0;
+    end
   end
 
   ///////////////////////

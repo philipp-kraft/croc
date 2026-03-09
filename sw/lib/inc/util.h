@@ -36,6 +36,12 @@ static inline uint32_t get_mstatus() {
     return mstatus;
 }
 
+static inline uint32_t get_misa() {
+    uint32_t misa;
+    asm volatile("csrr %0, misa" : "=r"(misa)::"memory");
+    return misa;
+}
+
 static inline uint32_t get_mie() {
     uint32_t mie;
     asm volatile("csrr %0, mie" : "=r"(mie)::"memory");

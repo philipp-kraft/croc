@@ -13,7 +13,6 @@ module cve2_core_tracing import cve2_pkg::*; #(
   parameter int unsigned PMPNumRegions     = 4,
   parameter int unsigned MHPMCounterNum    = 10,
   parameter int unsigned MHPMCounterWidth  = 40,
-  parameter bit          RV32E             = 1'b0,
   parameter rv32m_e      RV32M             = RV32MFast,
   parameter rv32b_e      RV32B             = RV32BNone,
   parameter bit          DbgTriggerEn      = 1'b0,
@@ -84,6 +83,7 @@ module cve2_core_tracing import cve2_pkg::*; #(
 
   // CPU Control Signals
   input  logic                         fetch_enable_i,
+  input  logic                         rv32e_mode_i,
   output logic                         core_busy_o
 
 );
@@ -139,7 +139,6 @@ module cve2_core_tracing import cve2_pkg::*; #(
     .PMPNumRegions    ( PMPNumRegions    ),
     .MHPMCounterNum   ( MHPMCounterNum   ),
     .MHPMCounterWidth ( MHPMCounterWidth ),
-    .RV32E            ( RV32E            ),
     .RV32M            ( RV32M            ),
     .RV32B            ( RV32B            ),
     .DbgTriggerEn     ( DbgTriggerEn     ),
@@ -232,6 +231,7 @@ module cve2_core_tracing import cve2_pkg::*; #(
     .rvfi_ext_mcycle,
 
     .fetch_enable_i,
+    .rv32e_mode_i,
     .core_busy_o
   );
 

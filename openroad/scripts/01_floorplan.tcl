@@ -153,7 +153,7 @@ placeInstance $bank1_sram0 $X $Y MX
 # defined in init_tech.tcl
 insertTapCells
 
-cut_rows -halo_width_x 1 -halo_width_y 1
+cut_rows -halo_width_x 1 -halo_width_y 4
 global_connect
 
 
