@@ -19,7 +19,6 @@ module cve2_core import cve2_pkg::*; #(
   parameter int unsigned PMPNumRegions     = 4,
   parameter int unsigned MHPMCounterNum    = 10,
   parameter int unsigned MHPMCounterWidth  = 40,
-  parameter bit          RV32E             = 1'b0,
   parameter rv32m_e      RV32M             = RV32MFast,
   parameter rv32b_e      RV32B             = RV32BNone,
   parameter bit          DbgTriggerEn      = 1'b0,
@@ -125,6 +124,7 @@ module cve2_core import cve2_pkg::*; #(
 
   // CPU Control Signals
   input  logic                         fetch_enable_i,
+  input  logic                         rv32e_mode_i,
   output logic                         core_busy_o
 );
 
@@ -374,7 +374,6 @@ module cve2_core import cve2_pkg::*; #(
   //////////////
 
   cve2_id_stage #(
-    .RV32E          (RV32E),
     .RV32M          (RV32M),
     .RV32B          (RV32B),
     .XInterface     (XInterface)
@@ -384,6 +383,7 @@ module cve2_core import cve2_pkg::*; #(
 
     // Processor Enable
     .fetch_enable_i(fetch_enable_i),
+    .rv32e_mode_i  (rv32e_mode_i),
     .ctrl_busy_o   (ctrl_busy),
     .illegal_insn_o(illegal_insn_id),
 
@@ -689,7 +689,6 @@ module cve2_core import cve2_pkg::*; #(
   // RF (Register File) //
   ////////////////////////
   cve2_register_file_ff #(
-    .RV32E            (RV32E),
     .DataWidth        (32),
     .WordZeroVal      (32'h0)
   ) register_file_i (
@@ -723,12 +722,13 @@ module cve2_core import cve2_pkg::*; #(
     .PMPEnable        (PMPEnable),
     .PMPGranularity   (PMPGranularity),
     .PMPNumRegions    (PMPNumRegions),
-    .RV32E            (RV32E),
     .RV32M            (RV32M),
     .RV32B            (RV32B)
   ) cs_registers_i (
     .clk_i (clk_i),
     .rst_ni(rst_ni),
+
+    .rv32e_mode_i(rv32e_mode_i),
 
     // Hart ID from outside
     .hart_id_i      (hart_id_i),

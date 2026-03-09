@@ -50,6 +50,11 @@ module croc_domain import croc_pkg::*; #(
   logic debug_req;
   logic fetch_enable;
 
+  logic core_rst_req;
+  logic core_rst_n;
+  logic rv32e_mode_pending;
+  logic rv32e_mode_active;
+
   // interrupts (irqs)
   logic clint_timer_irq;
   logic clint_software_irq;
@@ -220,7 +225,7 @@ module croc_domain import croc_pkg::*; #(
   core_wrap #(
   ) i_core_wrap (
     .clk_i,
-    .rst_ni,
+    .rst_ni         ( core_rst_n  ),
     .test_enable_i  ( testmode_i  ),
 
     .irqs_i         ( interrupts         ),
@@ -246,9 +251,11 @@ module croc_domain import croc_pkg::*; #(
     .data_rdata_i   ( core_data_obi_rsp.r.rdata  ),
     .data_err_i     ( core_data_obi_rsp.r.err    ),
 
-    .debug_req_i    ( debug_req    ),
-    .fetch_enable_i ( fetch_enable ),
-    .core_busy_o    ( core_busy_o  )
+    .debug_req_i      ( debug_req         ),
+    .fetch_enable_i   ( fetch_enable      ),
+    .rv32e_mode_i     ( rv32e_mode_active ),
+
+    .core_busy_o     ( core_busy_o )
   );
 
   // -----------------
@@ -562,10 +569,29 @@ module croc_domain import croc_pkg::*; #(
   ) i_soc_ctrl (
     .clk_i,
     .rst_ni,
-    .obi_req_i  ( soc_ctrl_obi_req ),
-    .obi_rsp_o  ( soc_ctrl_obi_rsp ),
-    .fetch_en_o ( fetch_enable     ),
-    .sram_dly_o ( sram_impl        )
+    .obi_req_i            ( soc_ctrl_obi_req   ),
+    .obi_rsp_o            ( soc_ctrl_obi_rsp   ),
+    .fetch_en_o           ( fetch_enable       ),
+    .sram_dly_o           ( sram_impl          ),
+    .core_rst_req_o       ( core_rst_req       ),
+    .rv32e_mode_pending_o ( rv32e_mode_pending )
+  );
+
+  core_reset_ctrl #(
+    .RstCycles ( 5 )
+  ) i_core_reset_ctrl (
+    .clk_i          ( clk_i        ),
+    .rst_ni         ( rst_ni       ),
+    .core_rst_req_i ( core_rst_req ),
+    .core_rst_no    ( core_rst_n   )
+  );
+
+  rv32e_mode_ctrl i_rv32e_mode_ctrl (
+    .clk_i                ( clk_i              ),
+    .rst_ni               ( rst_ni             ),
+    .core_rst_ni          ( core_rst_n         ),
+    .rv32e_mode_pending_i ( rv32e_mode_pending ),
+    .rv32e_mode_active_o  ( rv32e_mode_active  )
   );
 
   // UART
