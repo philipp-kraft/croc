@@ -12,7 +12,6 @@
  * targeting FPGA synthesis or Verilator simulation.
  */
 module cve2_register_file_ff #(
-  parameter bit                   RV32E             = 0,
   parameter int unsigned          DataWidth         = 32,
   parameter logic [DataWidth-1:0] WordZeroVal       = '0
 ) (
@@ -38,7 +37,7 @@ module cve2_register_file_ff #(
 
 );
 
-  localparam int unsigned ADDR_WIDTH = RV32E ? 4 : 5;
+  localparam int unsigned ADDR_WIDTH = 5; // always keep 32 registers
   localparam int unsigned NUM_WORDS  = 2**ADDR_WIDTH;
 
   logic [NUM_WORDS-1:0][DataWidth-1:0] rf_reg;

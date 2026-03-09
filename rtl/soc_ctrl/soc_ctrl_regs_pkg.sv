@@ -12,10 +12,12 @@ package soc_ctrl_regs_pkg;
   localparam int unsigned IntAddrWidth = 5;
 
   // Register offsets
-  parameter logic [IntAddrWidth-1:0] SOC_CTRL_BOOTADDR_OFFSET   = 5'h00;
-  parameter logic [IntAddrWidth-1:0] SOC_CTRL_FETCHEN_OFFSET    = 5'h04;
-  parameter logic [IntAddrWidth-1:0] SOC_CTRL_CORESTATUS_OFFSET = 5'h08;
-  parameter logic [IntAddrWidth-1:0] SOC_CTRL_BOOTMODE_OFFSET   = 5'h0c;
-  parameter logic [IntAddrWidth-1:0] SOC_CTRL_SRAM_DLY_OFFSET   = 5'h10;
+  parameter logic [IntAddrWidth-1:0] SOC_CTRL_BOOTADDR_OFFSET         = 5'h00;
+  parameter logic [IntAddrWidth-1:0] SOC_CTRL_FETCHEN_OFFSET          = 5'h04;
+  parameter logic [IntAddrWidth-1:0] SOC_CTRL_CORESTATUS_OFFSET       = 5'h08;
+  parameter logic [IntAddrWidth-1:0] SOC_CTRL_BOOTMODE_OFFSET         = 5'h0c;
+  parameter logic [IntAddrWidth-1:0] SOC_CTRL_SRAM_DLY_OFFSET         = 5'h10;
+  parameter logic [IntAddrWidth-1:0] SOC_CTRL_CORE_RST_REQ_OFFSET   = 5'h14;
+  parameter logic [IntAddrWidth-1:0] SOC_CTRL_CORE_RV32E_MODE_OFFSET  = 5'h18;
 
 endpackage

@@ -41,6 +41,7 @@ module core_wrap import croc_pkg::*; #() (
 
   // CPU Control Signals
   input  logic        fetch_enable_i,
+  input  logic        rv32e_mode_i,
 
   output logic        core_busy_o
 );
@@ -72,7 +73,6 @@ module core_wrap import croc_pkg::*; #() (
     .PMPNumRegions    ( 4                   ),
     .MHPMCounterNum   ( 0                   ),
     .MHPMCounterWidth ( 40                  ),
-    .RV32E            ( 0                   ),
     .RV32M            ( cve2_pkg::RV32MNone ),
     .RV32B            ( cve2_pkg::RV32BNone ),
     .DbgTriggerEn     ( 1'b1                ),
@@ -131,6 +131,7 @@ module core_wrap import croc_pkg::*; #() (
     .crash_dump_o        ( ),
     
     .fetch_enable_i,
+    .rv32e_mode_i,
     .core_busy_o
   );
 

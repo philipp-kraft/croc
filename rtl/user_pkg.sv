@@ -22,16 +22,17 @@ package user_pkg;
 
   // The base address of the user domain can be retrived from `croc_pkg::UserBaseAddr`
   // Recommended: place subordinates at 4KB boundaries (32'hXXXX_X000)
+  localparam int UserRomSize = 32'h0000_1000;
 
   /// Enum with user domain demultiplexer subordinate idxs
   typedef enum int {
     UserError  = 0,
-    UserDesign = 1
+    UserRom = 1
   } user_demux_outputs_e;
 
   /// Address rules given to user domain demultiplexer (see croc_pkg.sv for examples)
   localparam croc_pkg::addr_map_rule_t [0:0] user_addr_map = '{
-    '{ idx: UserDesign,  start_addr: croc_pkg::UserBaseAddr, end_addr: (croc_pkg::UserBaseAddr + 32'h1000_0000) }
+    '{ idx: UserRom,  start_addr: croc_pkg::UserBaseAddr, end_addr: (croc_pkg::UserBaseAddr + UserRomSize) }
   };
   // All addresses outside the defined address rules go to the error subordinate
 

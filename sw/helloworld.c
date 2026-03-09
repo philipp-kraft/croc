@@ -81,6 +81,11 @@ int main() {
     printf("Tick\n");
     clint_sleep_ms(10);
     printf("Tock\n");
+
+    // read misa
+    uint32_t misa = get_misa();
+    printf("misa=0x%x | E=%x I=%x\n", misa, (misa >> 4) & 1, (misa >> 8) & 1);
+
     uart_write_flush();
     return 0;
 }

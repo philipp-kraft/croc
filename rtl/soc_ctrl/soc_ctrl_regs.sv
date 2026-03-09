@@ -16,7 +16,9 @@ module soc_ctrl_regs #(
   output obi_rsp_t         obi_rsp_o,
   // To hardware
   output logic             fetch_en_o,
-  output logic             sram_dly_o
+  output logic             sram_dly_o,
+  output logic             core_rst_req_o,
+  output logic             rv32e_mode_pending_o
 );
 
   import soc_ctrl_regs_pkg::*;
@@ -27,6 +29,7 @@ module soc_ctrl_regs #(
   logic [31:0] core_status_d, core_status_q;
   logic          boot_mode_d,   boot_mode_q;
   logic           sram_dly_d,    sram_dly_q;
+  logic         rv32e_mode_d,  rv32e_mode_q;
 
   // Internal signals
   obi_req_t        obi_req_d, obi_req_q;
@@ -43,8 +46,9 @@ module soc_ctrl_regs #(
   assign obi_req_d = obi_req_i;
 
   // Output assignment
-  assign fetch_en_o  = fetch_en_q;
-  assign sram_dly_o  = sram_dly_q;
+  assign fetch_en_o           = fetch_en_q;
+  assign sram_dly_o           = sram_dly_q;
+  assign rv32e_mode_pending_o = rv32e_mode_q;
 
   always_comb begin : obi_response
     obi_rsp_o         = '0;
@@ -60,9 +64,11 @@ module soc_ctrl_regs #(
     err_d         = '0;
     boot_addr_d   = boot_addr_q;
     fetch_en_d    = fetch_en_q;
+    rv32e_mode_d  = rv32e_mode_q;
     core_status_d = core_status_q;
     boot_mode_d   = boot_mode_q;
     sram_dly_d    = sram_dly_q;
+    core_rst_req_o = '0;
 
     if (obi_req_i.req) begin
 
@@ -82,6 +88,12 @@ module soc_ctrl_regs #(
           end
           SOC_CTRL_SRAM_DLY_OFFSET: begin
             sram_dly_d = obi_req_i.a.wdata[0] & be_mask[0];
+          end
+          SOC_CTRL_CORE_RST_REQ_OFFSET: begin
+            core_rst_req_o = obi_req_i.a.wdata[0] & be_mask[0]; // just a single cycle pulse
+          end
+          SOC_CTRL_CORE_RV32E_MODE_OFFSET: begin
+            rv32e_mode_d = obi_req_i.a.wdata[0] & be_mask[0];
           end
           default: begin
             err_d = 1'b1;
@@ -105,6 +117,9 @@ module soc_ctrl_regs #(
           SOC_CTRL_SRAM_DLY_OFFSET: begin
             rdata_d = {31'b0, sram_dly_q};
           end
+          SOC_CTRL_CORE_RV32E_MODE_OFFSET: begin
+            rdata_d = {31'h0, rv32e_mode_q};
+          end
           default: begin
             rdata_d = 32'hBADCAB1E;
             err_d   = 1'b1;
@@ -119,6 +134,7 @@ module soc_ctrl_regs #(
     if (~rst_ni) begin
       boot_addr_q   <= BootAddrDefault;
       fetch_en_q    <= '1;
+      rv32e_mode_q  <= '0;
       core_status_q <= '0;
       boot_mode_q   <= '0;
       sram_dly_q    <= '0;
@@ -128,6 +144,7 @@ module soc_ctrl_regs #(
     end else begin
       boot_addr_q   <= boot_addr_d;
       fetch_en_q    <= fetch_en_d;
+      rv32e_mode_q  <= rv32e_mode_d;
       core_status_q <= core_status_d;
       boot_mode_q   <= boot_mode_d;
       sram_dly_q    <= sram_dly_d;

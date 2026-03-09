@@ -18,7 +18,6 @@
 `include "lowrisc_prim/prim_assert.svh"
 
 module cve2_id_stage #(
-  parameter bit               RV32E           = 0,
   parameter cve2_pkg::rv32m_e RV32M           = cve2_pkg::RV32MFast,
   parameter cve2_pkg::rv32b_e RV32B           = cve2_pkg::RV32BNone,
   parameter bit               XInterface      = 1'b0
@@ -27,6 +26,7 @@ module cve2_id_stage #(
   input  logic                      rst_ni,
 
   input  logic                      fetch_enable_i,
+  input  logic                      rv32e_mode_i,
   output logic                      ctrl_busy_o,
   output logic                      illegal_insn_o,
 
@@ -438,13 +438,14 @@ module cve2_id_stage #(
   /////////////
 
   cve2_decoder #(
-    .RV32E          (RV32E),
     .RV32M          (RV32M),
     .RV32B          (RV32B),
     .XInterface     (XInterface)
   ) decoder_i (
     .clk_i (clk_i),
     .rst_ni(rst_ni),
+
+    .rv32e_mode_i(rv32e_mode_i),
 
     // controller
     .illegal_insn_o(illegal_insn_dec),
