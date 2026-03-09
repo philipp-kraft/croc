@@ -13,7 +13,7 @@ expected_lines=(
   "\[JTAG\] Resumed hart 0"
   "\[UART\] Hello World from Croc v2!"
   "\[UART\]   iDMAEnable: 0"
-  "\[UART\]   Core: CVE2, RV32CIU"
+  "\[UART\]   Core: custom, RV32CIU"
   "\[UART\]   PMPEnable: 0"
   "\[UART\]   SRAM: 2h banks x 200h words"
   "\[UART\]   Debug\s*: present"
@@ -24,7 +24,7 @@ expected_lines=(
   "\[UART\]   GPIO\s*: present"
   "\[UART\]   Timer\s*: present"
   "\[UART\]   iDMA\s*: not present"
-  "\[UART\]   User ROM\s*: not present"
+  "\[UART\]   User ROM: \"ETH Zurich\""
 )
 
 for line in "${expected_lines[@]}"; do
