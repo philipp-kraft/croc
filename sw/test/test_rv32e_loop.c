@@ -7,44 +7,44 @@
 
 #include "uart.h"
 #include "print.h"
-#include "rv32e.h"
+#include "core.h"
 
-static volatile uint32_t cnt              = 0;
-static volatile rv32_mode_t expected_mode = RV32_MODE_INVALID;
+static volatile uint32_t cnt = 0;
+static volatile core_isa_t expected_mode;
 
-static rv32_mode_t rv32_mode_toggle(rv32_mode_t mode) {
-    if (mode == RV32_MODE_E) return RV32_MODE_I;
-    if (mode == RV32_MODE_I) return RV32_MODE_E;
-
-    return RV32_MODE_INVALID;
+static core_isa_t core_mode_toggle(core_isa_t isa) {
+    if (isa == CORE_ISA_RV32E) return CORE_ISA_RV32I;
+    if (isa == CORE_ISA_RV32I) return CORE_ISA_RV32E;
 }
 
 int main(void) {
     uart_init();
 
-    rv32_mode_t active_mode = rv32_mode_get_active();
+    core_isa_t active_isa = core_get_active_isa();
 
-    if (active_mode == RV32_MODE_INVALID) {
-        printf("FAIL: invalid active mode\n");
+    if (cnt > 0 && active_isa != expected_mode) {
+        printf("FAIL: expected mode %x, got %x\n", expected_mode, active_isa);
+        printf("\n");
         uart_write_flush();
         return 1;
     }
 
-    if (cnt > 0 && active_mode != expected_mode) {
-        printf("FAIL: expected mode %x, got %x\n", expected_mode, active_mode);
-        uart_write_flush();
-        return 1;
-    }
-
-    if (cnt == 10) {
-        printf("PASS: switched modes 10 times\n");
+    if (cnt == 11) {
+        printf("PASS: switched modes 11 times\n");
         uart_write_flush();
         return 0;
     }
 
     cnt += 1;
-    expected_mode = rv32_mode_toggle(active_mode);
-    rv32_mode_switch(expected_mode);
+    expected_mode = core_mode_toggle(active_isa);
+
+    core_reliability_t rel;
+    if (expected_mode == CORE_ISA_RV32E)
+        rel = CORE_RELIABILITY_ON;
+    else
+        rel = CORE_RELIABILITY_OFF;
+
+    core_mode_switch(expected_mode, rel);
 
     return 1;
 }

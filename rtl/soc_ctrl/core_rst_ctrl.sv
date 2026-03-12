@@ -5,7 +5,7 @@
 // Authors:
 // - Philipp Kraft <kraftp@ethz.ch>
 
-module core_reset_ctrl #(
+module core_rst_ctrl #(
   parameter int unsigned RstCycles = 5
 ) (
   input  logic clk_i,

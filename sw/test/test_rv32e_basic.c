@@ -7,7 +7,7 @@
 
 #include "uart.h"
 #include "print.h"
-#include "rv32e.h"
+#include "core.h"
 #include "util.h"
 
 static uint32_t isqrt(uint32_t n) {
@@ -31,17 +31,17 @@ static uint32_t isqrt(uint32_t n) {
 int main() {
     uart_init();
 
-    rv32_mode_switch(RV32_MODE_E);
+    uint32_t start = get_mcycle();
+    uint32_t res   = isqrt(1234567890UL);
+    uint32_t end   = get_mcycle();
 
-    if (rv32_mode_get_active() != RV32_MODE_E) {
+    core_mode_switch(CORE_ISA_RV32E, CORE_RELIABILITY_ON);
+
+    if (core_get_active_isa() != CORE_ISA_RV32E) {
         printf("FAIL: Core should be in E-mode, but is in I-mode\n");
         uart_write_flush();
         return 1;
     }
-
-    uint32_t start = get_mcycle();
-    uint32_t res   = isqrt(1234567890UL);
-    uint32_t end   = get_mcycle();
 
     if (res != 0x8940) {
         printf("FAIL: result is incorrect\n");

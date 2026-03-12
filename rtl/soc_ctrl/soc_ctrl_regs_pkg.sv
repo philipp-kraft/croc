@@ -19,6 +19,6 @@ package soc_ctrl_regs_pkg;
   parameter logic [IntAddrWidth-1:0] SOC_CTRL_INFO_OFFSET             = 5'h14;
 
   parameter logic [IntAddrWidth-1:0] SOC_CTRL_CORE_RST_REQ_OFFSET     = 5'h18;
-  parameter logic [IntAddrWidth-1:0] SOC_CTRL_CORE_RV32E_MODE_OFFSET  = 5'h1c;
+  parameter logic [IntAddrWidth-1:0] SOC_CTRL_CORE_MODE_OFFSET        = 5'h1c;
 
 endpackage

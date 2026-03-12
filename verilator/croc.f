@@ -171,8 +171,8 @@
 ../rtl/core_wrap.sv
 ../rtl/bootrom/bootrom.sv
 ../rtl/soc_ctrl/soc_ctrl_regs.sv
-../rtl/soc_ctrl/core_reset_ctrl.sv
-../rtl/soc_ctrl/rv32e_mode_ctrl.sv
+../rtl/soc_ctrl/core_rst_ctrl.sv
+../rtl/soc_ctrl/core_mode_ctrl.sv
 ../rtl/gpio/gpio_reg_top.sv
 ../rtl/gpio/gpio.sv
 ../rtl/clint/clint.sv

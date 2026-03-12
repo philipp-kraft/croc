@@ -42,6 +42,10 @@ package croc_pkg;
   /// 3'b000=CVE2, 3'b001=Ibex, 3'b111=custom, others are reserved
   localparam int unsigned CoreId        = 3'b111;
 
+  typedef struct packed {
+    logic reliable;
+    logic rv32e;
+  } core_mode_t;
 
   ////////////////////////
   // SRAM Configuration //
