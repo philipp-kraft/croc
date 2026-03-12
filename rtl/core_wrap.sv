@@ -76,6 +76,7 @@ module core_wrap import croc_pkg::*; #() (
   // fetch_enable_i: gates instruction fetch; ignore if core has no such signal
   input  logic        fetch_enable_i,
   input  logic        rv32e_mode_i,
+  input  logic        reliable_mode_i,
 
   // core_busy_o: power-management hint to the SoC; drive 1'b0 if not available
   output logic        core_busy_o
@@ -175,6 +176,7 @@ module core_wrap import croc_pkg::*; #() (
     // CPU Control Signals
     .fetch_enable_i,
     .rv32e_mode_i,
+    .reliable_mode_i,
     .core_busy_o
   );
 

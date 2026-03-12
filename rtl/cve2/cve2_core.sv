@@ -125,6 +125,7 @@ module cve2_core import cve2_pkg::*; #(
   // CPU Control Signals
   input  logic                         fetch_enable_i,
   input  logic                         rv32e_mode_i,
+  input  logic                         reliable_mode_i,
   output logic                         core_busy_o
 );
 
@@ -697,13 +698,17 @@ module cve2_core import cve2_pkg::*; #(
 
     .test_en_i(test_en_i),
 
+    .reliable_mode_i(reliable_mode_i),
+
     .raddr_a_i(rf_raddr_a),
     .rdata_a_o(rf_rdata_a),
     .raddr_b_i(rf_raddr_b),
     .rdata_b_o(rf_rdata_b),
+    .r_mode_i({reliable_mode_i, 1'b0}), // TODO: currently read from upper or lower bank 
     .waddr_a_i(rf_waddr_wb),
     .wdata_a_i(rf_wdata_wb),
-    .we_a_i   (rf_we_wb)
+    .we_a_i   (rf_we_wb),
+    .w_mode_i({2{reliable_mode_i}}) // TODO: currently mirror write in reliable mode
   );
 
 

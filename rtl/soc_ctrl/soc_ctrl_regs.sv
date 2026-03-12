@@ -7,6 +7,8 @@
 
 `include "common_cells/registers.svh"
 
+import croc_pkg::*;
+
 module soc_ctrl_regs #(
   parameter type               obi_req_t = logic,
   parameter type               obi_rsp_t = logic,
@@ -20,9 +22,8 @@ module soc_ctrl_regs #(
   output logic             fetch_en_o,
   output logic             sram_dly_o,
   output logic             core_rst_req_o,
-  output logic             rv32e_mode_pending_o
+  output core_mode_t       core_mode_pending_o
 );
-  import croc_pkg::*;
   import soc_ctrl_regs_pkg::*;
 
   // Read-only hardware info assembled from compile-time configuration.
@@ -61,14 +62,14 @@ module soc_ctrl_regs #(
   logic [31:0] core_status_d, core_status_q;
   logic          boot_mode_d,   boot_mode_q;
   logic           sram_dly_d,    sram_dly_q;
-  logic         rv32e_mode_d,  rv32e_mode_q;
+  core_mode_t   core_mode_d,    core_mode_q;
 
-  `FF(boot_addr_q, boot_addr_d, BootAddrDefault, clk_i, rst_ni)
-  `FF(fetch_en_q, fetch_en_d,              1'b1, clk_i, rst_ni)
-  `FF(core_status_q, core_status_d,          '0, clk_i, rst_ni)
-  `FF(boot_mode_q, boot_mode_d,              '0, clk_i, rst_ni)
-  `FF(sram_dly_q, sram_dly_d,                '0, clk_i, rst_ni)
-  `FF(rv32e_mode_q, rv32e_mode_d,            '0, clk_i, rst_ni)
+  `FF(boot_addr_q, boot_addr_d,              BootAddrDefault, clk_i, rst_ni)
+  `FF(fetch_en_q, fetch_en_d,                           1'b1, clk_i, rst_ni)
+  `FF(core_status_q, core_status_d,                       '0, clk_i, rst_ni)
+  `FF(boot_mode_q, boot_mode_d,                           '0, clk_i, rst_ni)
+  `FF(sram_dly_q, sram_dly_d,                             '0, clk_i, rst_ni)
+  `FF(core_mode_q, core_mode_d, '{reliable:1'b0, rv32e:1'b0}, clk_i, rst_ni)
 
   // OBI handling, A-phase fields needed in the R-phase
   logic                               req_q;
@@ -87,9 +88,12 @@ module soc_ctrl_regs #(
     assign be_mask[8*i +: 8] = {8{obi_req_i.a.be[i]}};
   end
 
-  assign fetch_en_o           = fetch_en_q;
-  assign sram_dly_o           = sram_dly_q;
-  assign rv32e_mode_pending_o = rv32e_mode_q;
+  assign fetch_en_o          = fetch_en_q;
+  assign sram_dly_o          = sram_dly_q;
+  assign core_mode_pending_o = core_mode_q;
+
+  core_mode_t core_mode_wdata;
+  assign core_mode_wdata = core_mode_t'(obi_req_i.a.wdata[1:0] & be_mask[1:0]);
 
   // Address phase: update writable registers
   always_comb begin : write_fsm
@@ -98,7 +102,7 @@ module soc_ctrl_regs #(
     core_status_d  = core_status_q;
     boot_mode_d    = boot_mode_q;
     sram_dly_d     = sram_dly_q;
-    rv32e_mode_d   = rv32e_mode_q;
+    core_mode_d    = core_mode_q;
     core_rst_req_o = 1'b0;
 
     if (obi_req_i.req && obi_req_i.a.we) begin
@@ -109,7 +113,11 @@ module soc_ctrl_regs #(
         SOC_CTRL_BOOTMODE_OFFSET:        boot_mode_d    = obi_req_i.a.wdata[0] & be_mask[0];
         SOC_CTRL_SRAM_DLY_OFFSET:        sram_dly_d     = obi_req_i.a.wdata[0] & be_mask[0];
         SOC_CTRL_CORE_RST_REQ_OFFSET:    core_rst_req_o = obi_req_i.a.wdata[0] & be_mask[0];
-        SOC_CTRL_CORE_RV32E_MODE_OFFSET: rv32e_mode_d   = obi_req_i.a.wdata[0] & be_mask[0];
+        SOC_CTRL_CORE_MODE_OFFSET:  begin
+          if (!(core_mode_wdata.reliable && !core_mode_wdata.rv32e)) begin
+            core_mode_d = core_mode_wdata;
+          end
+        end
         default: ;  // invalid address: no write, error signalled in R phase
       endcase
     end
@@ -131,7 +139,7 @@ module soc_ctrl_regs #(
           SOC_CTRL_BOOTMODE_OFFSET:        obi_rsp_o.r.rdata = {31'h0, boot_mode_q};
           SOC_CTRL_SRAM_DLY_OFFSET:        obi_rsp_o.r.rdata = {31'b0, sram_dly_q};
           SOC_CTRL_INFO_OFFSET:            obi_rsp_o.r.rdata = HwInfoWord;
-          SOC_CTRL_CORE_RV32E_MODE_OFFSET: obi_rsp_o.r.rdata = {31'b0, rv32e_mode_q};
+          SOC_CTRL_CORE_MODE_OFFSET:       obi_rsp_o.r.rdata = {30'b0, core_mode_q};
           default: begin
             obi_rsp_o.r.rdata = 32'hBADCAB1E;
             obi_rsp_o.r.err   = 1'b1;
@@ -145,7 +153,7 @@ module soc_ctrl_regs #(
           SOC_CTRL_BOOTMODE_OFFSET,
           SOC_CTRL_SRAM_DLY_OFFSET,
           SOC_CTRL_CORE_RST_REQ_OFFSET,
-          SOC_CTRL_CORE_RV32E_MODE_OFFSET:  ;  // valid write, no error
+          SOC_CTRL_CORE_MODE_OFFSET:  ;  // valid write, no error
           default: obi_rsp_o.r.err = 1'b1;
         endcase
       end

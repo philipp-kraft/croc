@@ -7,7 +7,7 @@
 
 #include "uart.h"
 #include "print.h"
-#include "rv32e.h"
+#include "core.h"
 
 static volatile uint32_t illegal_instr;
 
@@ -40,14 +40,14 @@ void croc_exception_handler(void) {
 int main() {
     uart_init();
 
-    rv32_mode_t mode = rv32_mode_get_active();
-    illegal_instr    = 0;
+    core_isa_t isa = core_get_active_isa();
+    illegal_instr  = 0;
 
     printf("Executing x20 instruction\n");
     uart_write_flush();
     asm volatile(".word 0x06900A13"); // addi x20, x0, 0x69
 
-    if (mode == RV32_MODE_I) {
+    if (isa == CORE_ISA_RV32I) {
         if (illegal_instr) {
             printf("FAIL: illegal instruction in I-mode\n");
             return 1;
@@ -57,10 +57,10 @@ int main() {
         printf("Switching to E-mode\n");
         uart_write_flush();
 
-        rv32_mode_switch(RV32_MODE_E);
+        core_mode_switch(CORE_ISA_RV32E, CORE_RELIABILITY_OFF);
     }
 
-    if (mode == RV32_MODE_E) {
+    if (isa == CORE_ISA_RV32E) {
         if (!illegal_instr) {
             printf("FAIL: x20 should trap in E-mode\n");
             return 1;

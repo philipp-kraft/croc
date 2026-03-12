@@ -1,0 +1,97 @@
+[*]
+[*] GTKWave Analyzer v4.0.0-prealpha (a6aae77) (w)1999-2022 BSI
+[*] Mon Mar 16 18:42:24 2026
+[*]
+[dumpfile] "/fosic/designs/croc/verilator/croc.fst"
+[dumpfile_mtime] "Mon Mar 16 18:39:32 2026"
+[dumpfile_size] 6003089
+[savefile] "/fosic/designs/croc/verilator/rf.gtkw"
+[timestart] 1754480000
+[size] 3428 1367
+[pos] -2272 -378
+*-17.509880 1756025300 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+[markername] AA
+[markername] BB
+[markername] CC
+[markername] DD
+[markername] EE
+[markername] FF
+[markername] GG
+[markername] HH
+[markername] II
+[markername] JJ
+[markername] KK
+[markername] LL
+[markername] MM
+[markername] NN
+[markername] OO
+[markername] PP
+[markername] QQ
+[markername] RR
+[markername] SS
+[markername] TT
+[markername] UU
+[markername] VV
+[markername] WW
+[markername] XX
+[markername] YY
+[markername] ZZ
+[treeopen] tb_croc_soc.
+[treeopen] tb_croc_soc.i_croc_soc.
+[treeopen] tb_croc_soc.i_croc_soc.i_croc.
+[treeopen] tb_croc_soc.i_croc_soc.i_croc.i_core_mode_ctrl.
+[treeopen] tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.
+[treeopen] tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.
+[treeopen] tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.id_stage_i.
+[sst_width] 456
+[signals_width] 198
+[sst_expanded] 1
+[sst_vpaned_height] 895
+@22
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_reg_q[31][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_reg_q[15][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_reg_q[30][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_reg_q[14][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_reg_q[29][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_reg_q[13][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_reg_q[28][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_reg_q[12][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_reg_q[27][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_reg_q[11][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_reg_q[26][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_reg_q[10][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_reg_q[25][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_reg_q[9][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_reg_q[24][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_reg_q[8][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_reg_q[23][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_reg_q[7][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_reg_q[22][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_reg_q[6][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_reg_q[21][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_reg_q[5][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_reg_q[20][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_reg_q[4][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_reg_q[19][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_reg_q[3][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_reg_q[18][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_reg_q[2][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_reg_q[17][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_reg_q[1][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_reg_q[16][31:0]
+@28
+tb_croc_soc.i_croc_soc.i_croc.i_core_mode_ctrl.core_mode_active_o.reliable
+tb_croc_soc.i_croc_soc.i_croc.i_core_mode_ctrl.core_mode_active_o.rv32e
+@24
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.raddr_a_i[4:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.raddr_a_resolved[4:0]
+@29
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.id_stage_i.decoder_i.rf_ren_a_o
+@24
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.raddr_b_i[4:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.raddr_b_resolved[4:0]
+@28
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.id_stage_i.decoder_i.rf_ren_b_o
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.r_mode_i[1:0]
+[pattern_trace] 1
+[pattern_trace] 0

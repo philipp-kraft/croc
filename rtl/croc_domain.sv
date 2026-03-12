@@ -52,8 +52,9 @@ module croc_domain import croc_pkg::*; #(
 
   logic core_rst_req;
   logic core_rst_n;
-  logic rv32e_mode_pending;
-  logic rv32e_mode_active;
+
+  core_mode_t core_mode_pending;
+  core_mode_t core_mode_active;
 
   // interrupts (irqs)
   logic clint_timer_irq;
@@ -225,35 +226,37 @@ module croc_domain import croc_pkg::*; #(
   core_wrap #(
   ) i_core_wrap (
     .clk_i,
-    .rst_ni         ( core_rst_n  ),
-    .test_enable_i  ( testmode_i  ),
+    .rst_ni          ( core_rst_n  ),
+    .test_enable_i   ( testmode_i  ),
 
-    .irqs_i         ( interrupts         ),
-    .timer_irq_i    ( clint_timer_irq    ),
-    .software_irq_i ( clint_software_irq ),
+    .irqs_i          ( interrupts         ),
+    .timer_irq_i     ( clint_timer_irq    ),
+    .software_irq_i  ( clint_software_irq ),
 
-    .boot_addr_i    ( BootromAddr ),
+    .boot_addr_i     ( BootromAddr ),
 
-    .instr_req_o    ( core_instr_obi_req.req     ),
-    .instr_gnt_i    ( core_instr_obi_rsp.gnt     ),
-    .instr_rvalid_i ( core_instr_obi_rsp.rvalid  ),
-    .instr_addr_o   ( core_instr_obi_req.a.addr  ),
-    .instr_rdata_i  ( core_instr_obi_rsp.r.rdata ),
-    .instr_err_i    ( core_instr_obi_rsp.r.err   ),
+    .instr_req_o     ( core_instr_obi_req.req     ),
+    .instr_gnt_i     ( core_instr_obi_rsp.gnt     ),
+    .instr_rvalid_i  ( core_instr_obi_rsp.rvalid  ),
+    .instr_addr_o    ( core_instr_obi_req.a.addr  ),
+    .instr_rdata_i   ( core_instr_obi_rsp.r.rdata ),
+    .instr_err_i     ( core_instr_obi_rsp.r.err   ),
 
-    .data_req_o     ( core_data_obi_req.req      ),
-    .data_gnt_i     ( core_data_obi_rsp.gnt      ),
-    .data_rvalid_i  ( core_data_obi_rsp.rvalid   ),
-    .data_we_o      ( core_data_obi_req.a.we     ),
-    .data_be_o      ( core_data_obi_req.a.be     ),
-    .data_addr_o    ( core_data_obi_req.a.addr   ),
-    .data_wdata_o   ( core_data_obi_req.a.wdata  ),
-    .data_rdata_i   ( core_data_obi_rsp.r.rdata  ),
-    .data_err_i     ( core_data_obi_rsp.r.err    ),
+    .data_req_o      ( core_data_obi_req.req      ),
+    .data_gnt_i      ( core_data_obi_rsp.gnt      ),
+    .data_rvalid_i   ( core_data_obi_rsp.rvalid   ),
+    .data_we_o       ( core_data_obi_req.a.we     ),
+    .data_be_o       ( core_data_obi_req.a.be     ),
+    .data_addr_o     ( core_data_obi_req.a.addr   ),
+    .data_wdata_o    ( core_data_obi_req.a.wdata  ),
+    .data_rdata_i    ( core_data_obi_rsp.r.rdata  ),
+    .data_err_i      ( core_data_obi_rsp.r.err    ),
 
-    .debug_req_i      ( debug_req         ),
-    .fetch_enable_i   ( fetch_enable      ),
-    .rv32e_mode_i     ( rv32e_mode_active ),
+    .debug_req_i     ( debug_req    ),
+    .fetch_enable_i  ( fetch_enable ),
+
+    .rv32e_mode_i    ( core_mode_active.rv32e    ),
+    .reliable_mode_i ( core_mode_active.reliable ),
 
     .core_busy_o     ( core_busy_o )
   );
@@ -569,17 +572,17 @@ module croc_domain import croc_pkg::*; #(
   ) i_soc_ctrl (
     .clk_i,
     .rst_ni,
-    .obi_req_i            ( soc_ctrl_obi_req   ),
-    .obi_rsp_o            ( soc_ctrl_obi_rsp   ),
-    .fetch_en_o           ( fetch_enable       ),
-    .sram_dly_o           ( sram_impl          ),
-    .core_rst_req_o       ( core_rst_req       ),
-    .rv32e_mode_pending_o ( rv32e_mode_pending )
+    .obi_req_i            ( soc_ctrl_obi_req  ),
+    .obi_rsp_o            ( soc_ctrl_obi_rsp  ),
+    .fetch_en_o           ( fetch_enable      ),
+    .sram_dly_o           ( sram_impl         ),
+    .core_rst_req_o       ( core_rst_req      ),
+    .core_mode_pending_o  ( core_mode_pending )
   );
 
-  core_reset_ctrl #(
+  core_rst_ctrl #(
     .RstCycles ( 500 )
-  ) i_core_reset_ctrl (
+  ) i_core_rst_ctrl (
     .clk_i          ( clk_i        ),
     .rst_ni         ( rst_ni       ),
     .testmode_i     ( testmode_i   ),
@@ -587,12 +590,12 @@ module croc_domain import croc_pkg::*; #(
     .core_rst_no    ( core_rst_n   )
   );
 
-  rv32e_mode_ctrl i_rv32e_mode_ctrl (
-    .clk_i                ( clk_i              ),
-    .rst_ni               ( rst_ni             ),
-    .core_rst_ni          ( core_rst_n         ),
-    .rv32e_mode_pending_i ( rv32e_mode_pending ),
-    .rv32e_mode_active_o  ( rv32e_mode_active  )
+  core_mode_ctrl i_core_mode_ctrl (
+    .clk_i                ( clk_i             ),
+    .rst_ni               ( rst_ni            ),
+    .core_rst_ni          ( core_rst_n        ),
+    .core_mode_pending_i  ( core_mode_pending ),
+    .core_mode_active_o   ( core_mode_active  )
   );
 
   // UART
