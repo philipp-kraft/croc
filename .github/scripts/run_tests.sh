@@ -6,7 +6,7 @@
 # - Philippe Sauter <phsauter@iis.ee.ethz.ch>
 
 # Run unit tests through Verilator simulation.
-# Usage: run_tests.sh [--sim SIM_BINARY] [--hexdir HEX_DIR] [--filter PATTERN][--timeout SECONDS]
+# Usage: run_tests.sh [--sim SIM_BINARY] [--hexdir HEX_DIR] [--filter PATTERN] [--timeout SECONDS] [--label NAME]
 #
 # Expects to be run from the verilator/ directory (or paths adjusted via flags).
 # Each test writes its own log file.
@@ -18,6 +18,7 @@ SIM_BINARY="obj_dir/Vtb_croc_soc"
 HEX_DIR="../sw/bin/test"
 FILTER="test_*"
 TIMEOUT=120
+LABEL=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -25,8 +26,9 @@ while [[ $# -gt 0 ]]; do
         --hexdir)  HEX_DIR="$2";   shift 2 ;;
         --filter)  FILTER="$2";    shift 2 ;;
         --timeout) TIMEOUT="$2";   shift 2 ;;
+        --label)   LABEL="$2";     shift 2 ;;
         -h|--help)
-            echo "Usage: $0 [--sim SIM_BINARY] [--hexdir HEX_DIR] [--filter PATTERN] [--timeout SECONDS]"
+            echo "Usage: $0 [--sim SIM_BINARY] [--hexdir HEX_DIR] [--filter PATTERN] [--timeout SECONDS] [--label NAME]"
             exit 0
             ;;
         *) echo "Unknown option: $1" >&2; exit 1 ;;
@@ -36,6 +38,13 @@ done
 if [[ ! -x "$SIM_BINARY" ]]; then
     echo "Error: Simulator binary not found or not executable: $SIM_BINARY" >&2
     exit 1
+fi
+
+if [[ -n "$LABEL" ]]; then
+    mkdir -p "$LABEL"
+    LOG_PREFIX="${LABEL}/"
+else
+    LOG_PREFIX=""
 fi
 
 # Find all test hex files from pattern
@@ -49,6 +58,9 @@ if [[ ${#hex_files[@]} -eq 0 ]]; then
 fi
 
 echo "Found ${#hex_files[@]} test(s) to run"
+if [[ -n "$LABEL" ]]; then
+    echo "$LABEL"
+fi
 echo "========================================="
 
 passed=0
@@ -57,7 +69,7 @@ declare -a results=()
 
 for hex in "${hex_files[@]}"; do
     test_name=$(basename "$hex" .hex)
-    log_file="${test_name}.log"
+    log_file="${LOG_PREFIX}${test_name}.log"
 
     printf "Running %-20s ... " "$test_name"
 
@@ -97,6 +109,9 @@ for hex in "${hex_files[@]}"; do
 done
 
 echo "========================================="
+if [[ -n "$LABEL" ]]; then
+    echo "$LABEL"
+fi
 echo "Summary: ${passed} passed, ${failed} failed, $((passed + failed)) total"
 echo ""
 

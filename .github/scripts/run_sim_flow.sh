@@ -24,16 +24,16 @@ echo "============================================="
 # ensure default config (iDMA off)
 "$SCRIPT_DIR/set_croc_config.sh"
 
-# build software
-make -C sw
+# build software for both ISAs
+make -C sw all
 
 # build verilator simulation and run helloworld
 cd verilator
-./run_verilator.sh --build 
-./run_verilator.sh --run ../sw/bin/helloworld.hex
+./run_verilator.sh --build
+./run_verilator.sh --run ../sw/bin/rv32i/helloworld.hex
 grep -q "\[UART\] Hello World from Croc!" croc.log || exit 1
 
-./run_verilator.sh --run ../sw/bin/test/print_config.hex
+./run_verilator.sh --run ../sw/bin/rv32i/test/print_config.hex
 "$SCRIPT_DIR/check_sim.sh" croc.log
 
 cd "$CROC_ROOT"
@@ -50,8 +50,15 @@ echo "============================================="
 cd verilator
 ./run_verilator.sh --build
 
-# run all unit tests
-"$SCRIPT_DIR/run_tests.sh"
+# run RV32I tests
+"$SCRIPT_DIR/run_tests.sh" \
+    --hexdir ../sw/bin/rv32i/test \
+    --label rv32i
+
+# run RV32E tests
+"$SCRIPT_DIR/run_tests.sh" \
+    --hexdir ../sw/bin/rv32e/test \
+    --label rv32e
 cd "$CROC_ROOT"
 
 # restore defaults
