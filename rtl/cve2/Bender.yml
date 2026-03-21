@@ -30,6 +30,7 @@ sources:
     - cve2_multdiv_fast.sv
     - cve2_multdiv_slow.sv
     - cve2_pmp.sv
+    - cve2_register_file_ff_wrap.sv
     - cve2_register_file_ff.sv
     - cve2_wb.sv
     # Level 2
