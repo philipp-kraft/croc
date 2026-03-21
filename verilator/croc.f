@@ -122,6 +122,7 @@
 ../rtl/cve2/cve2_multdiv_fast.sv
 ../rtl/cve2/cve2_multdiv_slow.sv
 ../rtl/cve2/cve2_pmp.sv
+../rtl/cve2/cve2_register_file_ff_wrap.sv
 ../rtl/cve2/cve2_register_file_ff.sv
 ../rtl/cve2/cve2_wb.sv
 ../rtl/cve2/cve2_cs_registers.sv
