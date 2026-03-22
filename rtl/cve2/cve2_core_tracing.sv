@@ -83,6 +83,7 @@ module cve2_core_tracing import cve2_pkg::*; #(
 
   // CPU Control Signals
   input  logic                         fetch_enable_i,
+  input  logic                         reliable_mode_i,
   input  logic                         rv32e_mode_i,
   output logic                         core_busy_o
 
@@ -231,6 +232,7 @@ module cve2_core_tracing import cve2_pkg::*; #(
     .rvfi_ext_mcycle,
 
     .fetch_enable_i,
+    .reliable_mode_i,
     .rv32e_mode_i,
     .core_busy_o
   );

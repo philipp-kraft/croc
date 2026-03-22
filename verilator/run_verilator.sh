@@ -99,6 +99,25 @@ generate_flist() {
     run_cmd "echo [INFO][Bender] File list generated: croc.f"
 }
 
+generate_flist_tracer() {
+    run_cmd "echo [INFO][Bender] Generate croc.f"
+    run_cmd "bender \
+        script flist-plus \
+        -t rtl \
+        -t verilator \
+        -t cve2_include_tracer \
+        -t synthesis \
+        -D VERILATOR=1 \
+        -D COMMON_CELLS_ASSERTS_OFF=1 \
+        -D TRACE_EXECUTION \
+        > croc.f"
+
+    run_cmd "echo [INFO][Bender] Remove absolute paths"
+    run_cmd "sed -i 's|${CROC_ROOT}|..|g' croc.f"
+
+    run_cmd "echo [INFO][Bender] File list with tracer generated: croc.f"
+}
+
 run_binary() {
     run_cmd "echo [INFO][Verilator] Running $1"
     run_cmd "obj_dir/Vtb_croc_soc +binary="$1" | tee ${PROJ_NAME}.log"
@@ -138,6 +157,10 @@ while [[ $# -gt 0 ]]; do
         # script-specific commands
         --flist)
             generate_flist
+            shift
+            ;;
+        --flisttracer)
+            generate_flist_tracer
             shift
             ;;
         --build)
