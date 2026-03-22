@@ -68,7 +68,6 @@ module user_rom #(
 
   assign obi_rsp_o.r.rdata      = rsp_data;
   assign obi_rsp_o.r.rid        = id_q;
-  assign obi_rsp_o.r.err        = '0;
   assign obi_rsp_o.r.r_optional = '0;
   assign obi_rsp_o.rvalid       = req_q;
   assign obi_rsp_o.r.err        = obi_err;
