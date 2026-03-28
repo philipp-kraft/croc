@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v4.0.0-prealpha (a6aae77) (w)1999-2022 BSI
-[*] Sat Mar 21 17:40:14 2026
+[*] Sat Mar 28 19:55:28 2026
 [*]
 [dumpfile] "/fosic/designs/croc/verilator/croc.fst"
-[dumpfile_mtime] "Sat Mar 21 17:33:02 2026"
-[dumpfile_size] 6024865
+[dumpfile_mtime] "Sat Mar 28 19:54:35 2026"
+[dumpfile_size] 1229263
 [savefile] "/fosic/designs/croc/verilator/rf.gtkw"
-[timestart] 0
+[timestart] 1584970400
 [size] 3428 1367
-[pos] -2272 -378
-*-28.370802 1841000000 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+[pos] -217 -611
+*-15.652158 1585399600 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 [markername] AA
 [markername] BB
 [markername] CC
@@ -42,60 +42,20 @@
 [treeopen] tb_croc_soc.i_croc_soc.i_croc.i_core_mode_ctrl.
 [treeopen] tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.
 [treeopen] tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.
-[treeopen] tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.id_stage_i.
-[treeopen] tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.
+[treeopen] tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.u_cve2_core.
+[treeopen] tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.u_cve2_core.register_file_i.
 [sst_width] 456
-[signals_width] 342
+[signals_width] 380
 [sst_expanded] 1
-[sst_vpaned_height] 726
+[sst_vpaned_height] 895
 @28
 tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.clk_i
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.rst_ni
 @200
 -
 @22
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_upper_bank_i.rf_reg[15][31:0]
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_lower_bank_i.rf_reg[15][31:0]
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_upper_bank_i.rf_reg[14][31:0]
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_lower_bank_i.rf_reg[14][31:0]
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_upper_bank_i.rf_reg[13][31:0]
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_lower_bank_i.rf_reg[13][31:0]
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_upper_bank_i.rf_reg[12][31:0]
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_lower_bank_i.rf_reg[12][31:0]
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_upper_bank_i.rf_reg[11][31:0]
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_lower_bank_i.rf_reg[11][31:0]
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_upper_bank_i.rf_reg[10][31:0]
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_lower_bank_i.rf_reg[10][31:0]
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_upper_bank_i.rf_reg[9][31:0]
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_lower_bank_i.rf_reg[9][31:0]
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_upper_bank_i.rf_reg[8][31:0]
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_lower_bank_i.rf_reg[8][31:0]
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_upper_bank_i.rf_reg[7][31:0]
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_lower_bank_i.rf_reg[7][31:0]
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_upper_bank_i.rf_reg[6][31:0]
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_lower_bank_i.rf_reg[6][31:0]
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_upper_bank_i.rf_reg[5][31:0]
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_lower_bank_i.rf_reg[5][31:0]
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_upper_bank_i.rf_reg[4][31:0]
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_lower_bank_i.rf_reg[4][31:0]
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_upper_bank_i.rf_reg[3][31:0]
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_lower_bank_i.rf_reg[3][31:0]
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_upper_bank_i.rf_reg[2][31:0]
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_lower_bank_i.rf_reg[2][31:0]
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_upper_bank_i.rf_reg[1][31:0]
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_lower_bank_i.rf_reg[1][31:0]
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_upper_bank_i.rf_reg[0][31:0]
-@23
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.rf_lower_bank_i.rf_reg[0][31:0]
-@200
--
-@24
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.raddr_a_i[4:0]
-@28
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.id_stage_i.decoder_i.rf_ren_a_o
-@24
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.register_file_i.raddr_b_i[4:0]
-@28
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.id_stage_i.decoder_i.rf_ren_b_o
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.u_cve2_core.if_stage_i.pc_if_o[31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.u_cve2_core.if_stage_i.pc_id_o[31:0]
 @200
 -
 @28
@@ -103,5 +63,36 @@ tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.id_stage_i.decoder_i.rf_ren_b_o
 tb_croc_soc.i_croc_soc.i_croc.i_core_mode_ctrl.core_mode_active_o.reliable
 [color] 1
 tb_croc_soc.i_croc_soc.i_croc.i_core_mode_ctrl.core_mode_active_o.rv32e
+@200
+-
+@28
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.u_cve2_core.id_stage_i.rel_compare_mismatch
+@29
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.u_cve2_core.id_stage_i.rel_error_q
+@28
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.u_cve2_core.id_stage_i.rel_path_en
+@22
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.u_cve2_core.id_stage_i.rel_primary_run_result_q[31:0]
+@28
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.u_cve2_core.id_stage_i.rel_secondary_run_q
+@200
+-
+@22
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.u_cve2_core.register_file_i.rf_lower_bank_i.rf_reg[0][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.u_cve2_core.register_file_i.rf_lower_bank_i.rf_reg[1][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.u_cve2_core.register_file_i.rf_lower_bank_i.rf_reg[2][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.u_cve2_core.register_file_i.rf_lower_bank_i.rf_reg[3][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.u_cve2_core.register_file_i.rf_lower_bank_i.rf_reg[4][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.u_cve2_core.register_file_i.rf_lower_bank_i.rf_reg[5][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.u_cve2_core.register_file_i.rf_lower_bank_i.rf_reg[6][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.u_cve2_core.register_file_i.rf_lower_bank_i.rf_reg[7][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.u_cve2_core.register_file_i.rf_lower_bank_i.rf_reg[8][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.u_cve2_core.register_file_i.rf_lower_bank_i.rf_reg[9][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.u_cve2_core.register_file_i.rf_lower_bank_i.rf_reg[10][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.u_cve2_core.register_file_i.rf_lower_bank_i.rf_reg[11][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.u_cve2_core.register_file_i.rf_lower_bank_i.rf_reg[12][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.u_cve2_core.register_file_i.rf_lower_bank_i.rf_reg[13][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.u_cve2_core.register_file_i.rf_lower_bank_i.rf_reg[14][31:0]
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.u_cve2_core.register_file_i.rf_lower_bank_i.rf_reg[15][31:0]
 [pattern_trace] 1
 [pattern_trace] 0

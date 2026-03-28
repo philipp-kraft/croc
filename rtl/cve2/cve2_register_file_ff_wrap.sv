@@ -18,10 +18,12 @@ module cve2_register_file_ff_wrap #(
 
   // Read port R1
   input  logic [4:0]           raddr_a_i,
+  input  logic                 rbank_remap_a_i,
   output logic [DataWidth-1:0] rdata_a_o,
 
   // Read port R2
   input  logic [4:0]           raddr_b_i,
+  input  logic                 rbank_remap_b_i,
   output logic [DataWidth-1:0] rdata_b_o,
 
   // Write port W1
@@ -36,6 +38,7 @@ module cve2_register_file_ff_wrap #(
   logic [DataWidth-1:0] rdata_b_upper, rdata_b_lower;
 
   logic we_lower, we_upper;
+  logic select_upper_a, select_upper_b;
 
   always_comb begin : we_bank_decoder
     we_upper = 1'b0;
@@ -54,8 +57,12 @@ module cve2_register_file_ff_wrap #(
     end
   end
 
-  assign rdata_a_o = raddr_a_i[4] ? rdata_a_upper : rdata_a_lower;
-  assign rdata_b_o = raddr_b_i[4] ? rdata_b_upper : rdata_b_lower;
+  // remap access to upper bank
+  assign select_upper_a = reliable_mode_i ? rbank_remap_a_i : raddr_a_i[4];
+  assign select_upper_b = reliable_mode_i ? rbank_remap_b_i : raddr_b_i[4];
+
+  assign rdata_a_o = select_upper_a ? rdata_a_upper : rdata_a_lower;
+  assign rdata_b_o = select_upper_b ? rdata_b_upper : rdata_b_lower;
 
   cve2_register_file_ff #(
     .DataWidth        (DataWidth),

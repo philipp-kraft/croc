@@ -27,6 +27,7 @@ module cve2_id_stage #(
 
   input  logic                      fetch_enable_i,
   input  logic                      rv32e_mode_i,
+  input  logic                      reliable_mode_i,
   output logic                      ctrl_busy_o,
   output logic                      illegal_insn_o,
 
@@ -149,8 +150,10 @@ module cve2_id_stage #(
 
   // Register file read
   output logic [4:0]                rf_raddr_a_o,
+  output logic                      rf_rbank_remap_a_o,
   input  logic [31:0]               rf_rdata_a_i,
   output logic [4:0]                rf_raddr_b_o,
+  output logic                      rf_rbank_remap_b_o,
   input  logic [31:0]               rf_rdata_b_i,
   output logic                      rf_ren_a_o,
   output logic                      rf_ren_b_o,
@@ -232,6 +235,13 @@ module cve2_id_stage #(
   logic [31:0] rf_rdata_a_fwd;
   logic [31:0] rf_rdata_b_fwd;
 
+  logic [31:0] rel_primary_run_result_q, rel_primary_run_result_d;
+
+  logic        rel_path_en; // enabled for this instruction type
+  logic        rel_secondary_run_q, rel_secondary_run_d; // 0 for primary run and 1 for secondary run
+  logic        rel_compare_mismatch; // mismatch
+  logic        rel_error_q, rel_error_d; // store the error
+
   // ALU Control
   alu_op_e     alu_operator;
   op_a_sel_e   alu_op_a_mux_sel, alu_op_a_mux_sel_dec;
@@ -279,6 +289,18 @@ module cve2_id_stage #(
       id_fsm_q <= FIRST_CYCLE;
     end else if (instr_executing) begin
       id_fsm_q <= id_fsm_d;
+    end
+  end
+
+  always_ff @(posedge clk_i or negedge rst_ni) begin : rel_reg
+    if (!rst_ni) begin
+      rel_secondary_run_q      <= 1'b0;
+      rel_error_q              <= 1'b0;
+      rel_primary_run_result_q <= '0;
+    end else if (instr_executing) begin
+      rel_secondary_run_q      <= rel_secondary_run_d;
+      rel_error_q              <= rel_error_d;
+      rel_primary_run_result_q <= rel_primary_run_result_d;
     end
   end
 
@@ -399,6 +421,26 @@ module cve2_id_stage #(
 
   // ALU MUX for Operand B
   assign alu_operand_b = (alu_op_b_mux_sel == OP_B_IMM) ? imm_b : rf_rdata_b_fwd;
+
+  assign rel_path_en = reliable_mode_i &
+                                ~illegal_insn_dec &
+                                ~illegal_csr_insn_i &
+                                (rf_wd_sel_e'({rf_wdata_sel}) == RF_WD_EX) &
+                                rf_we_dec &
+                                ~lsu_req_dec &
+                                ~jump_in_dec &
+                                ~branch_in_dec &
+                                ~multdiv_en_dec &
+                                ~alu_multicycle_dec &
+                                ~csr_access_o &
+                                (alu_operator == ALU_ADD) &
+                                (alu_op_a_mux_sel_dec == OP_A_REG_A) &
+                                (alu_op_b_mux_sel_dec == OP_B_IMM);
+
+  assign rel_compare_mismatch = rel_secondary_run_q && rel_path_en && (result_ex_i != rel_primary_run_result_q);
+
+  assign rf_rbank_remap_a_o = rel_secondary_run_q;
+  assign rf_rbank_remap_b_o = rel_secondary_run_q;
 
   /////////////////////////////////////////
   // Multicycle Operation Stage Register //
@@ -723,10 +765,21 @@ module cve2_id_stage #(
     jump_set_raw            = 1'b0;
     perf_branch_o           = 1'b0;
 
+    rel_primary_run_result_d = rel_primary_run_result_q;
+    rel_secondary_run_d = rel_secondary_run_q;
+    rel_error_d       = rel_error_q;
+
     if (instr_executing_spec) begin
       unique case (id_fsm_q)
         FIRST_CYCLE: begin
           unique case (1'b1)
+            rel_path_en: begin
+              id_fsm_d = MULTI_CYCLE;
+              rf_we_raw = 1'b0;
+              stall_alu = 1'b1;
+              rel_secondary_run_d = 1'b1;
+              rel_primary_run_result_d = result_ex_i;
+            end
             lsu_req_dec: begin
               begin
                 // LSU operation
@@ -797,17 +850,29 @@ module cve2_id_stage #(
         end
 
         MULTI_CYCLE: begin
-          if(multdiv_en_dec) begin
-            rf_we_raw       = rf_we_dec & ex_valid_i;
-          end
-
-          if (multicycle_done) begin
-            id_fsm_d        = FIRST_CYCLE;
+          if (rel_secondary_run_q) begin
+            // special secondary run case
+            rel_secondary_run_d = 1'b0;
+            if (rel_compare_mismatch) begin
+              rel_error_d = 1'b1; // TODO: do something when an error occurs
+            end else begin
+              rf_we_raw = rf_we_dec & ex_valid_i; // TODO: when isn't the ALU output valid?
+              id_fsm_d  = FIRST_CYCLE;
+            end
           end else begin
-            stall_multdiv   = multdiv_en_dec;
-            stall_branch    = branch_in_dec;
-            stall_jump      = jump_in_dec;
-            stall_coproc    = XInterface & illegal_insn_dec;
+            // default multi cycle case
+            if(multdiv_en_dec) begin
+              rf_we_raw       = rf_we_dec & ex_valid_i;
+            end
+
+            if (multicycle_done) begin
+              id_fsm_d        = FIRST_CYCLE;
+            end else begin
+              stall_multdiv   = multdiv_en_dec;
+              stall_branch    = branch_in_dec;
+              stall_jump      = jump_in_dec;
+              stall_coproc    = XInterface & illegal_insn_dec;
+            end
           end
         end
 
@@ -853,6 +918,14 @@ module cve2_id_stage #(
   // Without writeback stage any valid instruction that hasn't seen an error will execute
   assign instr_executing_spec = instr_valid_i & ~instr_fetch_err_i & controller_run;
   assign instr_executing = instr_executing_spec;
+
+  `ifndef SYNTHESIS
+    always_ff @(posedge clk_i) begin
+      if (rst_ni && rel_compare_mismatch) begin
+        $fatal(1, "computation mismatch: primary=0x%h secondary=0x%h instr=0x%h", rel_primary_run_result_q, result_ex_i, instr_rdata_i);
+      end
+    end
+  `endif
 
   `ASSERT(IbexStallIfValidInstrNotExecuting,
     instr_valid_i & ~instr_fetch_err_i & ~instr_executing & controller_run |-> stall_id)

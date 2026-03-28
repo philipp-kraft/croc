@@ -175,8 +175,10 @@ module cve2_core import cve2_pkg::*; #(
 
   // Register File
   logic [4:0]  rf_raddr_a;
+  logic        rf_rbank_remap_a;
   logic [31:0] rf_rdata_a;
   logic [4:0]  rf_raddr_b;
+  logic        rf_rbank_remap_b;
   logic [31:0] rf_rdata_b;
   logic        rf_ren_a;
   logic        rf_ren_b;
@@ -385,6 +387,7 @@ module cve2_core import cve2_pkg::*; #(
     // Processor Enable
     .fetch_enable_i(fetch_enable_i),
     .rv32e_mode_i  (rv32e_mode_i),
+    .reliable_mode_i(reliable_mode_i),
     .ctrl_busy_o   (ctrl_busy),
     .illegal_insn_o(illegal_insn_id),
 
@@ -504,8 +507,10 @@ module cve2_core import cve2_pkg::*; #(
     .csr_rdata_i(csr_rdata),
 
     .rf_raddr_a_o      (rf_raddr_a),
+    .rf_rbank_remap_a_o(rf_rbank_remap_a),
     .rf_rdata_a_i      (rf_rdata_a),
     .rf_raddr_b_o      (rf_raddr_b),
+    .rf_rbank_remap_b_o(rf_rbank_remap_b),
     .rf_rdata_b_i      (rf_rdata_b),
     .rf_ren_a_o        (rf_ren_a),
     .rf_ren_b_o        (rf_ren_b),
@@ -699,8 +704,10 @@ module cve2_core import cve2_pkg::*; #(
     .test_en_i(test_en_i),
 
     .raddr_a_i(rf_raddr_a),
+    .rbank_remap_a_i(rf_rbank_remap_a),
     .rdata_a_o(rf_rdata_a),
     .raddr_b_i(rf_raddr_b),
+    .rbank_remap_b_i(rf_rbank_remap_b),
     .rdata_b_o(rf_rdata_b),
     .waddr_a_i(rf_waddr_wb),
     .wdata_a_i(rf_wdata_wb),
