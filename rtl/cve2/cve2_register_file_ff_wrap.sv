@@ -5,6 +5,8 @@
 // Authors:
 // - Philipp Kraft <kraftp@ethz.ch>
 
+`include "common_cells/assertions.svh"
+
 module cve2_register_file_ff_wrap #(
   parameter int unsigned          DataWidth         = 32,
   parameter logic [DataWidth-1:0] WordZeroVal       = '0
@@ -93,16 +95,14 @@ module cve2_register_file_ff_wrap #(
     .we_a_i   (we_lower)
   );
 
-  // in reliable mode the register file banks should never get out of sync
-  `ifndef SYNTHESIS
-    always_ff @(posedge clk_i) begin : check_rf_sync
-      if (rst_ni && reliable_mode_i == 1'b1) begin
-        for (int i = 0; i < 16; i++) begin
-          assert (rf_lower_bank_i.rf_reg[i] == rf_upper_bank_i.rf_reg[i])
-            else $fatal(1, "RF mismatch: x%0d=0x%h x%0d=0x%h", i, rf_lower_bank_i.rf_reg[i], i + 16, rf_upper_bank_i.rf_reg[i]);
-        end
-      end
-    end
-  `endif
+  // In reliable mode the mirrored register file banks must remain identical.
+  for (genvar i = 0; i < 16; i++) begin : gen_rf_sync_asserts
+    `ASSERT_IF(CVE2ReliableRfBanksMatch,
+               rf_lower_bank_i.rf_reg[i] == rf_upper_bank_i.rf_reg[i],
+               reliable_mode_i,
+               clk_i,
+               !rst_ni,
+               $sformatf("RF mismatch: x%0d=0x%h x%0d=0x%h", i, rf_lower_bank_i.rf_reg[i], i + 16, rf_upper_bank_i.rf_reg[i]))
+  end
 
 endmodule
