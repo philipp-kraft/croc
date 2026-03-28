@@ -27,6 +27,7 @@ module cve2_id_stage #(
 
   input  logic                      fetch_enable_i,
   input  logic                      rv32e_mode_i,
+  input  logic                      reliable_mode_i,
   output logic                      ctrl_busy_o,
   output logic                      illegal_insn_o,
 
@@ -149,8 +150,10 @@ module cve2_id_stage #(
 
   // Register file read
   output logic [4:0]                rf_raddr_a_o,
+  output logic                      rf_rbank_remap_a_o,
   input  logic [31:0]               rf_rdata_a_i,
   output logic [4:0]                rf_raddr_b_o,
+  output logic                      rf_rbank_remap_b_o,
   input  logic [31:0]               rf_rdata_b_i,
   output logic                      rf_ren_a_o,
   output logic                      rf_ren_b_o,
@@ -195,12 +198,14 @@ module cve2_id_stage #(
   logic        instr_executing_spec;
   logic        instr_executing;
   logic        instr_done;
+  logic        instr_done_base;
   logic        controller_run;
   logic        stall_mem;
   logic        stall_multdiv;
   logic        stall_branch;
   logic        stall_jump;
   logic        stall_id;
+  logic        stall_id_base;
   logic        flush_id;
   logic        multicycle_done;
 
@@ -266,6 +271,165 @@ module cve2_id_stage #(
 
   // CV-X-IF
   logic stall_coproc;
+
+  /////////////
+  // REL FSM //
+  /////////////
+
+  typedef enum logic { PRIMARY, SECONDARY } rel_phase_e;
+
+  typedef enum logic [3:0] {
+    REL_NONE,
+    REL_SC_ALU,
+    REL_BRANCH,
+    REL_JUMP,
+    REL_LOAD,
+    REL_STORE,
+    REL_MULTDIV,
+    REL_MC_ALU,
+    REL_CSR,
+    REL_SYSTEM
+  } rel_instr_class_e;
+
+  typedef struct packed {
+    rel_instr_class_e instr_class;
+    logic [31:0]      cmp_val0;
+    logic [31:0]      cmp_val1;
+  } rel_result_t;
+
+  // rel fsm register
+  rel_phase_e  rel_phase_q, rel_phase_d;
+  rel_result_t rel_primary_result_q, rel_primary_result_d;
+  logic        rel_error_q, rel_error_d;
+
+  // rel signals
+  logic single_cycle_ex_dec;
+  rel_instr_class_e rel_instr_class_dec;
+
+  rel_result_t rel_current_result;
+
+  logic rel_instr_supported;
+  logic rel_do_capture;
+  logic rel_do_compare;
+
+  logic stall_rel;
+  logic rel_commit;
+
+  logic rel_match;
+
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      rel_phase_q          <= PRIMARY;
+      rel_primary_result_q <= '0;
+      rel_error_q          <= 1'b0;
+    end else begin
+      rel_phase_q          <= rel_phase_d;
+      rel_primary_result_q <= rel_primary_result_d;
+      rel_error_q          <= rel_error_d;
+    end
+  end
+
+  assign single_cycle_ex_dec = rf_we_dec &
+                                 ~lsu_req_dec &
+                                 ~multdiv_en_dec &
+                                 ~branch_in_dec &
+                                 ~jump_in_dec &
+                                 ~alu_multicycle_dec &
+                                 ~illegal_insn_dec &
+                                 ~illegal_csr_insn_i &
+                                 ~csr_access_o;
+
+  // rel instruction class decoder
+  always_comb begin
+    rel_instr_class_dec = REL_NONE;
+
+    unique case (1'b1)
+      single_cycle_ex_dec:   rel_instr_class_dec = REL_SC_ALU;
+      branch_in_dec:         rel_instr_class_dec = REL_BRANCH;
+      jump_in_dec:           rel_instr_class_dec = REL_JUMP;
+      lsu_req_dec & ~lsu_we: rel_instr_class_dec = REL_LOAD;
+      lsu_req_dec & lsu_we:  rel_instr_class_dec = REL_STORE;
+      multdiv_en_dec:        rel_instr_class_dec = REL_MULTDIV;
+      alu_multicycle_dec:    rel_instr_class_dec = REL_MC_ALU;
+      default:               rel_instr_class_dec = REL_NONE;
+    endcase
+  end
+
+  // current architectural result of instruction class
+  always_comb begin
+    rel_current_result.instr_class = rel_instr_class_dec;
+    rel_current_result.cmp_val0 = '0;
+    rel_current_result.cmp_val1 = '0;
+
+    unique case (rel_instr_class_dec)
+      REL_SC_ALU: begin
+        rel_current_result.cmp_val0 = result_ex_i;
+      end
+      default:;
+    endcase
+  end
+
+  // rel fsm next state logic
+  always_comb begin
+    rel_phase_d          = rel_phase_q;
+    rel_primary_result_d = rel_primary_result_q;
+    rel_error_d          = rel_error_q;
+
+    if (!reliable_mode_i) begin
+      rel_phase_d          = PRIMARY;
+      rel_primary_result_d = '0;
+      rel_error_d          = 1'b0;
+    end else if (!rel_error_q) begin
+      if (rel_do_capture) begin
+        rel_phase_d          = SECONDARY;
+        rel_primary_result_d = rel_current_result;
+      end else if (rel_do_compare) begin
+        if (rel_match) begin
+          rel_phase_d          = PRIMARY;
+          rel_primary_result_d = '0;
+        end else begin
+          rel_error_d = 1'b1;
+        end
+      end
+    end
+  end
+
+  // rel fsm output logic
+  always_comb begin
+    stall_rel  = 1'b0;
+    rel_commit = 1'b1;
+
+    if (reliable_mode_i) begin
+      if (rel_error_q) begin
+        stall_rel  = 1'b1;
+        rel_commit = 1'b0;
+      end else if (rel_do_capture) begin
+        stall_rel  = 1'b1;
+        rel_commit = 1'b0;
+      end else if (rel_do_compare && !rel_match) begin
+        stall_rel  = 1'b1;
+        rel_commit = 1'b0;
+      end
+    end
+  end
+
+  assign rel_instr_supported = (rel_instr_class_dec == REL_SC_ALU);
+
+  assign rel_do_capture = reliable_mode_i &&
+                          (rel_phase_q == PRIMARY) &&
+                          rel_instr_supported &&
+                          instr_done_base;
+
+  assign rel_do_compare = reliable_mode_i &&
+                          (rel_phase_q == SECONDARY) &&
+                          rel_instr_supported &&
+                          instr_done_base;
+
+  assign rel_match = (rel_primary_result_q.cmp_val0 == rel_current_result.cmp_val0) &&
+                     (rel_primary_result_q.cmp_val1 == rel_current_result.cmp_val1);
+
+  assign rf_rbank_remap_a_o = (rel_phase_q == SECONDARY);
+  assign rf_rbank_remap_b_o = (rel_phase_q == SECONDARY);
 
   ///////////////
   // ID-EX FSM //
@@ -421,7 +585,7 @@ module cve2_id_stage #(
   ///////////////////////
 
   // Suppress register write if there is an illegal CSR access or instruction is not executing
-  assign rf_we_id_o = rf_we_raw & instr_executing & ~illegal_csr_insn_i;
+  assign rf_we_id_o = rf_we_raw & instr_executing & ~illegal_csr_insn_i & rel_commit;
 
   // Register file write data mux
   always_comb begin : rf_wdata_id_mux
@@ -826,16 +990,18 @@ module cve2_id_stage #(
 
   // Stall ID/EX stage for reason that relates to instruction in ID/EX, update assertion below if
   // modifying this.
-  assign stall_id = stall_mem | stall_multdiv | stall_jump | stall_branch |
-                      stall_alu | (XInterface & stall_coproc);
+  assign stall_id_base = stall_mem | stall_multdiv | stall_jump | stall_branch |
+                           stall_alu | (XInterface & stall_coproc);
+  assign stall_id        = stall_id_base | stall_rel;
 
   // Generally illegal instructions have no reason to stall, however they must still stall waiting
   // for outstanding memory requests so exceptions related to them take priority over the illegal
   // instruction exception.
   `ASSERT(IllegalInsnStallMustBeMemStall, illegal_insn_o & stall_id |-> stall_mem &
-    ~(stall_multdiv | stall_jump | stall_branch | stall_alu))
+    ~(stall_multdiv | stall_jump | stall_branch | stall_alu | stall_rel))
 
-  assign instr_done = ~stall_id & ~flush_id & instr_executing;
+  assign instr_done_base = ~stall_id_base & ~flush_id & instr_executing;
+  assign instr_done        = instr_done_base & rel_commit;
 
   // Signal instruction in ID is in it's first cycle. It can remain in its
   // first cycle if it is stalled.
@@ -930,6 +1096,22 @@ module cve2_id_stage #(
 
   `ifdef CHECK_MISALIGNED
   `ASSERT(CVE2MisalignedMemoryAccess, !lsu_addr_incr_req_i)
+  `endif
+
+  // TODO: remove this when we actually handle the error
+  `ifndef SYNTHESIS
+    always_ff @(posedge clk_i) begin
+      if (rst_ni && rel_do_compare && !rel_match) begin
+        $fatal(1,
+              "REL mismatch: class=%0d primary=(0x%08h,0x%08h) secondary=(0x%08h,0x%08h) pc=0x%08h",
+              rel_primary_result_q.instr_class,
+              rel_primary_result_q.cmp_val0,
+              rel_primary_result_q.cmp_val1,
+              rel_current_result.cmp_val0,
+              rel_current_result.cmp_val1,
+              pc_id_i);
+      end
+    end
   `endif
 
 endmodule

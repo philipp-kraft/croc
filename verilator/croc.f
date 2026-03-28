@@ -3,12 +3,15 @@
 +incdir+../rtl/cve2/include
 +incdir+../rtl/idma/include
 +incdir+../rtl/obi/include
++define+RVFI=true
++define+TARGET_CVE2_INCLUDE_TRACER
 +define+TARGET_FLIST
 +define+TARGET_RTL
 +define+TARGET_SYNTHESIS
 +define+TARGET_VERILATOR
 +define+VERILATOR=1
 +define+COMMON_CELLS_ASSERTS_OFF=1
++define+TRACE_EXECUTION
 ../rtl/common_verification/clk_rst_gen.sv
 ../rtl/tech_cells_generic/tc_sram.sv
 ../rtl/tech_cells_generic/tc_sram_impl.sv
@@ -131,6 +134,9 @@
 ../rtl/cve2/cve2_prefetch_buffer.sv
 ../rtl/cve2/cve2_if_stage.sv
 ../rtl/cve2/cve2_core.sv
+../rtl/cve2/cve2_tracer_pkg.sv
+../rtl/cve2/cve2_tracer.sv
+../rtl/cve2/cve2_core_tracing.sv
 ../rtl/idma/idma_pkg.sv
 ../rtl/idma/idma_channel_coupler.sv
 ../rtl/idma/idma_dataflow_element.sv

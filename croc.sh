@@ -18,11 +18,16 @@ case "$1" in
     ;;
 
   sim)
-    PROGRAM=${2:-helloworld.hex}
+    PROGRAM=${2:-rv32i/helloworld.hex}
     cd sw
     make all
     cd ../verilator
     ./run_verilator.sh --build --run ../sw/bin/$PROGRAM
+    ;;
+
+  wave)
+    GTKW=${2:-cve2_tracer.gtkw}
+    gtkwave verilator/croc.fst verilator/$GTKW
     ;;
 
   all)
@@ -35,7 +40,7 @@ case "$1" in
     ;;
 
   *)
-    echo "Usage: $0 {synth|pnr|gds|sim|all}"
+    echo "Usage: $0 {synth|pnr|gds|sim|wave|all}"
     exit 1
     ;;
 esac
