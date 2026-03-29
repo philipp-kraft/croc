@@ -43,7 +43,7 @@ int main() {
 
     printf("PASS: result: 0x%x, cycles: 0x%x\n", res, end - start);
     uart_write_flush();
-    
+
     core_mode_switch(CORE_ISA_RV32E, CORE_RELIABILITY_ON);
 
     if (core_get_active_isa() != CORE_ISA_RV32E) {

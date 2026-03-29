@@ -199,6 +199,7 @@ module cve2_id_stage #(
   logic        instr_executing;
   logic        instr_done;
   logic        controller_run;
+  logic        stall_rel;
   logic        stall_mem;
   logic        stall_multdiv;
   logic        stall_branch;
@@ -428,16 +429,16 @@ module cve2_id_stage #(
   assign alu_operand_b = (alu_op_b_mux_sel == OP_B_IMM) ? imm_b : rf_rdata_b_fwd;
 
   // enable secondary run for single cycle alu instructions
-  assign rel_path_en = reliable_mode_i &
-                       rf_we_dec &
-                       ~lsu_req_dec &
-                       ~multdiv_en_dec &
-                       ~branch_in_dec &
-                       ~jump_in_dec &
-                       ~alu_multicycle_dec &
-                       ~illegal_insn_dec &
-                       ~illegal_csr_insn_i &
-                       ~csr_access_o;
+  assign single_cycle_ex_instr = reliable_mode_i &
+                                 rf_we_dec &
+                                 ~lsu_req_dec &
+                                 ~multdiv_en_dec &
+                                 ~branch_in_dec &
+                                 ~jump_in_dec &
+                                 ~alu_multicycle_dec &
+                                 ~illegal_insn_dec &
+                                 ~illegal_csr_insn_i &
+                                 ~csr_access_o;
 
   // compare results from temporary buffer with ALU result
   assign rel_compare_mismatch = (rel_phase_q == SECONDARY) && (result_ex_i != rel_primary_run_result_q);
@@ -760,6 +761,7 @@ module cve2_id_stage #(
   always_comb begin
     id_fsm_d                = id_fsm_q;
     rf_we_raw               = rf_we_dec;
+    stall_rel               = 1'b0;
     stall_multdiv           = 1'b0;
     stall_jump              = 1'b0;
     stall_branch            = 1'b0;
@@ -777,28 +779,29 @@ module cve2_id_stage #(
       unique case (id_fsm_q)
         FIRST_CYCLE: begin
           unique case (1'b1)
-            rel_path_en: begin
+            single_cycle_ex_instr: begin
               if (rel_phase_q == PRIMARY) begin
                 rf_we_raw = 1'b0;
-                stall_alu = 1'b1;
+                stall_rel = 1'b1;
                 rel_phase_d = SECONDARY;
                 rel_primary_run_result_d = result_ex_i;
-              end else begin
+              end else if (rel_phase_q == SECONDARY) begin
                 if (rel_compare_mismatch) begin
-                  rel_error_d = 1'b1; // TODO: do something when an error occurs
+                  rel_error_d = 1'b1;
+                  // TODO: handle error
                 end else begin
-                  rf_we_raw = rf_we_dec & ex_valid_i; // TODO: when isn't the ALU output valid?
+                  rf_we_raw = rf_we_dec & ex_valid_i;
                   id_fsm_d  = FIRST_CYCLE;
                   rel_phase_d = PRIMARY;
                 end
               end
             end
+
             lsu_req_dec: begin
-              begin
-                // LSU operation
-                id_fsm_d    = MULTI_CYCLE;
-              end
+              // LSU operation
+              id_fsm_d    = MULTI_CYCLE;
             end
+
             multdiv_en_dec: begin
               // MUL or DIV operation
               if (~ex_valid_i) begin
@@ -809,6 +812,7 @@ module cve2_id_stage #(
                 stall_multdiv = 1'b1;
               end
             end
+
             branch_in_dec: begin
               // cond branch operation
               // All branches take two cycles in fixed time execution mode, regardless of branch
@@ -821,17 +825,20 @@ module cve2_id_stage #(
 
               perf_branch_o = 1'b1;
             end
+
             jump_in_dec: begin
               // uncond branch operation
               id_fsm_d      = MULTI_CYCLE;
               stall_jump    = 1'b1;
               jump_set_raw  = jump_set_dec;
             end
+
             alu_multicycle_dec: begin
               stall_alu     = 1'b1;
               id_fsm_d      = MULTI_CYCLE;
               rf_we_raw     = 1'b0;
             end
+
             illegal_insn_dec: begin
 
               // CV-X-IF
@@ -859,6 +866,7 @@ module cve2_id_stage #(
             default: begin
               id_fsm_d      = FIRST_CYCLE;
             end
+
           endcase
         end
 
@@ -892,14 +900,14 @@ module cve2_id_stage #(
 
   // Stall ID/EX stage for reason that relates to instruction in ID/EX, update assertion below if
   // modifying this.
-  assign stall_id = stall_mem | stall_multdiv | stall_jump | stall_branch |
+  assign stall_id = stall_rel | stall_mem | stall_multdiv | stall_jump | stall_branch |
                       stall_alu | (XInterface & stall_coproc);
 
   // Generally illegal instructions have no reason to stall, however they must still stall waiting
   // for outstanding memory requests so exceptions related to them take priority over the illegal
   // instruction exception.
   `ASSERT(IllegalInsnStallMustBeMemStall, illegal_insn_o & stall_id |-> stall_mem &
-    ~(stall_multdiv | stall_jump | stall_branch | stall_alu))
+    ~(stall_multdiv | stall_jump | stall_branch | stall_alu | stall_rel))
 
   assign instr_done = ~stall_id & ~flush_id & instr_executing;
 
@@ -920,7 +928,7 @@ module cve2_id_stage #(
   assign instr_executing_spec = instr_valid_i & ~instr_fetch_err_i & controller_run;
   assign instr_executing = instr_executing_spec;
 
-  // TODO: remove this when we handle error on mismatch
+  // TODO: remove this when we actually handle the error
   `ifndef SYNTHESIS
     always_ff @(posedge clk_i) begin
       if (rst_ni && rel_compare_mismatch) begin
