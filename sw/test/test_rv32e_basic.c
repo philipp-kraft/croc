@@ -35,14 +35,6 @@ int main() {
     uint32_t res   = isqrt(1234567890UL);
     uint32_t end   = get_mcycle();
 
-    core_mode_switch(CORE_ISA_RV32E, CORE_RELIABILITY_ON);
-
-    if (core_get_active_isa() != CORE_ISA_RV32E) {
-        printf("FAIL: Core should be in E-mode, but is in I-mode\n");
-        uart_write_flush();
-        return 1;
-    }
-
     if (res != 0x8940) {
         printf("FAIL: result is incorrect\n");
         uart_write_flush();
@@ -51,5 +43,14 @@ int main() {
 
     printf("PASS: result: 0x%x, cycles: 0x%x\n", res, end - start);
     uart_write_flush();
+    
+    core_mode_switch(CORE_ISA_RV32E, CORE_RELIABILITY_ON);
+
+    if (core_get_active_isa() != CORE_ISA_RV32E) {
+        printf("FAIL: Core should be in E-mode, but is in I-mode\n");
+        uart_write_flush();
+        return 1;
+    }
+
     return 0;
 }
