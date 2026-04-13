@@ -55,10 +55,23 @@ cd verilator
     --hexdir ../sw/bin/rv32i/test \
     --label rv32i
 
+# run RV32I ISA tests with reliablity on
+"$SCRIPT_DIR/run_tests.sh" \
+    --hexdir ../sw/bin/rv32i/test/isa \
+    --label rv32i-isa \
+    --filter '*'
+
 # run RV32E tests
 "$SCRIPT_DIR/run_tests.sh" \
     --hexdir ../sw/bin/rv32e/test \
     --label rv32e
+
+# run RV32E ISA tests with reliablity on
+"$SCRIPT_DIR/run_tests.sh" \
+    --hexdir ../sw/bin/rv32e/test/isa \
+    --label rv32e-isa \
+    --filter '*'
+
 cd "$CROC_ROOT"
 
 # restore defaults

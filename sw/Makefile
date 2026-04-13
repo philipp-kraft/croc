@@ -19,10 +19,11 @@ RISCV_AS      ?= $(RISCV_PREFIX)as
 RISCV_AR      ?= $(RISCV_PREFIX)ar
 RISCV_LD      ?= $(RISCV_PREFIX)ld
 RISCV_STRIP   ?= $(RISCV_PREFIX)strip
+EXTRA_CFLAGS  ?=
 
 # Compiler and linker flags
-RISCV_FLAGS ?= -march=$(RISCV_MARCH) -mabi=$(RISCV_MABI) -mcmodel=medany \
-	-static -std=gnu99 -Os -nostdlib -fno-builtin -ffreestanding
+RISCV_FLAGS ?= -march=$(RISCV_MARCH) $(EXTRA_CFLAGS) -mabi=$(RISCV_MABI) -mcmodel=medany \
+	-static -std=gnu99 -Os -nostdlib -fno-builtin -ffreestanding -mno-relax
 RISCV_CCFLAGS ?= $(RISCV_FLAGS) -Iinclude -I$(INCDIR) -I$(CURDIR)
 RISCV_LDFLAGS ?= -static -nostartfiles -lm -lgcc $(RISCV_FLAGS)
 
@@ -40,7 +41,7 @@ INCDIR   ?= lib/inc
 # Collecting source files
 LIB_SOURCES         := $(wildcard $(SRCDIR)/*.[cS])
 TOP_SOURCES         := $(filter-out $(CRT0), $(wildcard *.[cS]))
-TEST_SOURCES        := $(wildcard test/*.[cS])
+TEST_SOURCES        := $(wildcard test/*.[cS]) $(wildcard test/isa/*.[cS])
 COMMON_TEST_SOURCES := $(filter-out test/test_rv32e_%,$(TEST_SOURCES))
 PROG_SOURCES        ?= $(TOP_SOURCES) $(TEST_SOURCES)
 
@@ -116,7 +117,8 @@ rv32e:
 		RISCV_MABI=ilp32e \
 		BINDIR=$(BINDIR_BASE)/rv32e \
 		BUILDDIR=$(BUILDDIR_BASE)/rv32e \
-		PROG_SOURCES="$(TOP_SOURCES) $(TEST_SOURCES)"
+		PROG_SOURCES="$(TOP_SOURCES) $(TEST_SOURCES)" \
+		EXTRA_CFLAGS="-DRELIABLE_MODE"
 
 clean:
 	rm -rf $(BINDIR_BASE) $(BUILDDIR_BASE)
