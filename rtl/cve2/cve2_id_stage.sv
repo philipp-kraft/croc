@@ -375,7 +375,10 @@ module cve2_id_stage #(
     rel_primary_result_d = rel_primary_result_q;
     rel_error_d          = rel_error_q;
 
-    if (!reliable_mode_i) begin
+    if (flush_id) begin
+      rel_phase_d          = PRIMARY;
+      rel_primary_result_d = '0;
+    end else if (!reliable_mode_i) begin
       rel_phase_d          = PRIMARY;
       rel_primary_result_d = '0;
       rel_error_d          = 1'b0;
