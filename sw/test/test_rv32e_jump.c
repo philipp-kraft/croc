@@ -10,19 +10,22 @@
 #include "core.h"
 #include "util.h"
 
-static inline uint32_t run_branch_benchmark(void) {
+static inline uint32_t run_jalr_benchmark(void) {
     uint32_t cycles, tmp;
     uint32_t iters = 100;
 
-    asm volatile("csrr  %[cycles], mcycle\n\t"
+    asm volatile("la    t0, 2f\n\t"
+                 "csrr  %[cycles], mcycle\n\t"
                  "1:\n\t"
+                 "jalr  x1, t0, 0\n\t"
+                 "2:\n\t"
                  "addi  %[iters], %[iters], -1\n\t"
                  "bnez  %[iters], 1b\n\t"
                  "csrr  %[tmp], mcycle\n\t"
                  "sub   %[cycles], %[tmp], %[cycles]\n\t"
                  : [cycles] "=&r"(cycles), [tmp] "=&r"(tmp), [iters] "+&r"(iters)
                  :
-                 :);
+                 : "t0", "x1");
 
     printf("cycles: 0x%x\n", cycles);
     uart_write_flush();
@@ -34,7 +37,7 @@ int main() {
     uart_init();
 
     // START: This area is executed three times: RV32I, RV32E, reliable RV32E
-    uint32_t out = run_branch_benchmark();
+    uint32_t out = run_jalr_benchmark();
     // END: This area is executed three times: RV32I, RV32E, reliable RV32E
 
     // Switch from RV32I to non-reliable RV32E

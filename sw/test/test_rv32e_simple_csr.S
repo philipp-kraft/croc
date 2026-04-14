@@ -1,0 +1,21 @@
+.section .text
+.globl main
+
+main:
+    li t0, 0xFF
+    csrrw t1, mscratch, t0
+    li t0, 0xFFFF
+    csrrs t1, mscratch, t0
+
+    # switch to RV32E reliable
+    addi a0, x0, 1      # rv32e
+    addi a1, x0, 1      # reliability on
+    addi sp, sp, -4
+    sw   ra, 0(sp)
+    call core_mode_switch
+    lw   ra, 0(sp)
+    addi sp, sp, 4
+
+    # return 0
+    li a0, 0
+    ret

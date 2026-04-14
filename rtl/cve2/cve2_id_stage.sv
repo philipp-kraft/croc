@@ -309,6 +309,7 @@ module cve2_id_stage #(
   rel_result_t rel_current_result;
 
   logic rel_instr_supported;
+  logic rel_sub_op_rdy;
   logic rel_do_capture;
   logic rel_do_compare;
 
@@ -341,8 +342,6 @@ module cve2_id_stage #(
 
   // rel instruction class decoder
   always_comb begin
-    rel_instr_class_dec = REL_NONE;
-
     unique case (1'b1)
       single_cycle_ex_dec:   rel_instr_class_dec = REL_SC_ALU;
       branch_in_dec:         rel_instr_class_dec = REL_BRANCH;
@@ -351,7 +350,21 @@ module cve2_id_stage #(
       lsu_req_dec & lsu_we:  rel_instr_class_dec = REL_STORE;
       multdiv_en_dec:        rel_instr_class_dec = REL_MULTDIV;
       alu_multicycle_dec:    rel_instr_class_dec = REL_MC_ALU;
+      csr_access_o:          rel_instr_class_dec = REL_CSR;
       default:               rel_instr_class_dec = REL_NONE;
+    endcase
+  end
+
+  always_comb begin
+    unique case (rel_instr_class_dec)
+      REL_SC_ALU:  rel_sub_op_rdy = instr_done_base;
+      REL_BRANCH:  rel_sub_op_rdy = ex_valid_i;
+      REL_JUMP:    rel_sub_op_rdy = ex_valid_i;
+      REL_LOAD:    rel_sub_op_rdy = instr_first_cycle;
+      REL_STORE:   rel_sub_op_rdy = instr_first_cycle;
+      REL_MULTDIV: rel_sub_op_rdy = instr_done_base;
+      REL_CSR:     rel_sub_op_rdy = instr_done_base;
+      default:     rel_sub_op_rdy = 1'b0;
     endcase
   end
 
@@ -363,7 +376,26 @@ module cve2_id_stage #(
 
     unique case (rel_instr_class_dec)
       REL_SC_ALU: begin
-        rel_current_result.cmp_val0 = result_ex_i;
+        rel_current_result.cmp_val0 = result_ex_i; // rd
+      end
+      REL_BRANCH: begin
+        rel_current_result.cmp_val0 = (id_fsm_q == FIRST_CYCLE) ? {31'b0, branch_decision_i} : result_ex_i; // 1. branch decision 2. branch target
+      end
+      REL_JUMP: begin
+        rel_current_result.cmp_val0 = result_ex_i; // 1. jump target 2. rd = PC + 4
+      end
+      REL_LOAD: begin
+        rel_current_result.cmp_val0 = result_ex_i; // effective address
+      end
+      REL_STORE: begin
+        rel_current_result.cmp_val0 = result_ex_i; // effective address
+        rel_current_result.cmp_val1 = lsu_wdata_o; // data
+      end
+      REL_MULTDIV: begin
+        rel_current_result.cmp_val0 = result_ex_i; // rd
+      end
+      REL_CSR: begin
+        rel_current_result.cmp_val0 = alu_operand_a; // rs1
       end
       default:;
     endcase
@@ -416,17 +448,26 @@ module cve2_id_stage #(
     end
   end
 
-  assign rel_instr_supported = (rel_instr_class_dec == REL_SC_ALU);
+  assign rel_instr_supported =
+      rel_instr_class_dec inside {
+          REL_SC_ALU,
+          REL_BRANCH,
+          REL_JUMP,
+          REL_LOAD,
+          REL_STORE,
+          REL_MULTDIV,
+          REL_CSR
+      };
 
   assign rel_do_capture = reliable_mode_i &&
                           (rel_phase_q == PRIMARY) &&
                           rel_instr_supported &&
-                          instr_done_base;
+                          rel_sub_op_rdy;
 
   assign rel_do_compare = reliable_mode_i &&
                           (rel_phase_q == SECONDARY) &&
                           rel_instr_supported &&
-                          instr_done_base;
+                          rel_sub_op_rdy;
 
   assign rel_match = (rel_primary_result_q.cmp_val0 == rel_current_result.cmp_val0) &&
                      (rel_primary_result_q.cmp_val1 == rel_current_result.cmp_val1);
@@ -444,7 +485,7 @@ module cve2_id_stage #(
   always_ff @(posedge clk_i or negedge rst_ni) begin : id_pipeline_reg
     if (!rst_ni) begin
       id_fsm_q <= FIRST_CYCLE;
-    end else if (instr_executing) begin
+    end else if (instr_executing & rel_commit) begin
       id_fsm_q <= id_fsm_d;
     end
   end
@@ -805,7 +846,7 @@ module cve2_id_stage #(
   assign mult_en_id      = instr_executing ? mult_en_dec                     : 1'b0;
   assign div_en_id       = instr_executing ? div_en_dec                      : 1'b0;
 
-  assign lsu_req_o               = lsu_req;
+  assign lsu_req_o               = lsu_req & rel_commit;
   assign lsu_we_o                = lsu_we;
   assign lsu_type_o              = lsu_type;
   assign lsu_sign_ext_o          = lsu_sign_ext;
@@ -840,7 +881,7 @@ module cve2_id_stage #(
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
       branch_set_raw_q <= 1'b0;
-    end else begin
+    end else if (rel_commit) begin
       branch_set_raw_q <= branch_set_raw_d;
     end
   end
@@ -848,7 +889,7 @@ module cve2_id_stage #(
   // Branches always take two cycles in fixed time execution mode, with or without the branch
   // target ALU (to avoid a path from the branch decision into the branch target ALU operand
   // muxing).
-  assign branch_set_raw      = branch_set_raw_q;
+  assign branch_set_raw      = branch_set_raw_q & rel_commit & (id_fsm_q == MULTI_CYCLE);
 
 
   // Track whether the current instruction in ID/EX has done a branch or jump set.
@@ -913,7 +954,7 @@ module cve2_id_stage #(
             branch_in_dec: begin
               // cond branch operation
               // All branches take two cycles in fixed time execution mode, regardless of branch
-              // condition.
+              // condition. -> this is not true right now (no branch is single cycle, branch two)
               // SEC_CM: CORE.DATA_REG_SW.SCA
               id_fsm_d         = (branch_decision_i) ?
                                      MULTI_CYCLE : FIRST_CYCLE;
@@ -926,7 +967,7 @@ module cve2_id_stage #(
               // uncond branch operation
               id_fsm_d      = MULTI_CYCLE;
               stall_jump    = 1'b1;
-              jump_set_raw  = jump_set_dec;
+              jump_set_raw  = jump_set_dec & rel_commit;
             end
             alu_multicycle_dec: begin
               stall_alu     = 1'b1;
@@ -1106,7 +1147,7 @@ module cve2_id_stage #(
     always_ff @(posedge clk_i) begin
       if (rst_ni && rel_do_compare && !rel_match) begin
         $fatal(1,
-              "REL mismatch: class=%0d primary=(0x%08h,0x%08h) secondary=(0x%08h,0x%08h) pc=0x%08h",
+              "REL mismatch: class=%0d primary=(0x%08h, 0x%08h) secondary=(0x%08h, 0x%08h) pc=0x%08h",
               rel_primary_result_q.instr_class,
               rel_primary_result_q.cmp_val0,
               rel_primary_result_q.cmp_val1,
