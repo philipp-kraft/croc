@@ -1,27 +1,19 @@
-# Copyright 2024 ETH Zurich and University of Bologna.
+# Copyright 2026 ETH Zurich and University of Bologna.
 # Solderpad Hardware License, Version 0.51, see LICENSE for details.
 # SPDX-License-Identifier: SHL-0.51
 
 # Authors:
 # - Philippe Sauter <phsauter@iis.ee.ethz.ch>
+# - Philipp Kraft <kraftp@ethz.ch>
 
-# Backend constraints
-
-############
-## Global ##
-############
-
-source src/instances.tcl
-
+# Backend constraints for core_wrap
 
 #############################
 ## Driving Cells and Loads ##
 #############################
 
-# As a default, drive multiple GPIO pads and be driven by one.
-# accomodate for driving up to 2 74HC pads plus a 5pF trace
-set_load [expr 2 * 5.0 + 5.0] [all_outputs]
-set_driving_cell [all_inputs] -lib_cell sg13g2_IOPadOut16mA -pin pad
+# set_load 0.5 [all_outputs]
+# set_driving_cell [all_inputs] -lib_cell sg13g2_buf_2
 
 
 ##################
@@ -29,103 +21,64 @@ set_driving_cell [all_inputs] -lib_cell sg13g2_IOPadOut16mA -pin pad
 ##################
 puts "Clocks..."
 
-# We target 100 MHz
-set TCK_SYS 10.0
+# Target 100 MHz
+set TCK_SYS 7
 create_clock -name clk_sys -period $TCK_SYS [get_ports clk_i]
-
-set TCK_JTG 25.0
-create_clock -name clk_jtg -period $TCK_JTG [get_ports jtag_tck_i]
-
-set TCK_RTC 50.0
-create_clock -name clk_rtc -period $TCK_RTC [get_ports ref_clk_i]
 
 
 ##################################
 ## Clock Groups & Uncertainties ##
 ##################################
 
-# Define which clocks are asynchronous to each other
-# If you have added a clock it is a good idea to temporarily add -allow_paths.
-# This means the paths between clocks (CDC) are timed and will show up as violations,
-# making them very easy to find and write constraints for.
-set_clock_groups -asynchronous -name clk_groups_async \
-     -group {clk_rtc} \
-     -group {clk_jtg} \
-     -group {clk_sys}
-
-# We set reasonable uncertainties in their transistion timing
-# and transition (rise/fall) times for all clocks (ns)
 set_clock_uncertainty 0.1 [all_clocks]
 set_clock_transition  0.2 [all_clocks]
 
 
-####################
-## Cdcs and Syncs ##
-####################
-puts "CDC/Sync..."
-
-# Clock Domain Crossings: paths going from an FF with one clock to an FF with another.
-# The setup/hold checks on these paths are deactivated by set_clock_groups -asynchronous.
-# An additional requirement is that the max delay is below min($TCK_SYS, $TCK_JTG) 
-# to make sure any change propages within one cycle of either clock.
-# An (optional) lower delay is better for metastability recovery -> 3ns as a reasonable goal
-
-## Constrain `cdc_2phase` for DMI request
-set_max_delay 3.0 -from $JTAG_ASYNC_REQ_START -to $JTAG_ASYNC_REQ_END -ignore_clock_latency
-
-# Constrain `cdc_2phase` for DMI response
-set_max_delay 3.0 -from $JTAG_ASYNC_RSP_START -to $JTAG_ASYNC_RSP_END -ignore_clock_latency
-
-
 #############
-## SoC Ins ##
+## Inputs  ##
 #############
-puts "Input/Outputs..."
+puts "Inputs..."
 
 # Reset should propagate to system domain within a clock cycle.
-set_input_delay -max [ expr $TCK_JTG * 0.10 ] [get_ports {rst_ni testmode_i}]  
-set_false_path -hold   -from [get_ports {rst_ni testmode_i}]
-set_max_delay $TCK_SYS -from [get_ports {rst_ni testmode_i}]
+set_input_delay -max [expr $TCK_SYS * 0.10] [get_ports {rst_ni test_enable_i}]
+set_false_path -hold -from [get_ports {rst_ni test_enable_i}]
+set_max_delay $TCK_SYS -from [get_ports {rst_ni test_enable_i}]
+
+# Mode selection (sampled at boot)
+# set_input_delay -max [expr $TCK_SYS * 0.10] [get_ports {rv32e_mode_i reliable_mode_i}]
+# set_false_path -hold -from [get_ports {rv32e_mode_i reliable_mode_i}]
+# set_max_delay $TCK_SYS -from [get_ports {rv32e_mode_i reliable_mode_i}] -to [all_outputs]
+
+# Interrupts
+set_input_delay -min -add_delay -clock clk_sys [expr $TCK_SYS * 0.10] [get_ports {irqs_i* timer_irq_i software_irq_i}]
+set_input_delay -max -add_delay -clock clk_sys [expr $TCK_SYS * 0.20] [get_ports {irqs_i* timer_irq_i software_irq_i}]
+
+# Boot address, debug, fetch enable
+set_input_delay -min -add_delay -clock clk_sys [expr $TCK_SYS * 0.10] [get_ports {boot_addr_i* debug_req_i fetch_enable_i}]
+set_input_delay -max -add_delay -clock clk_sys [expr $TCK_SYS * 0.20] [get_ports {boot_addr_i* debug_req_i fetch_enable_i}]
+
+# Instruction memory interface
+set_input_delay -min -add_delay -clock clk_sys [expr $TCK_SYS * 0.10] [get_ports {instr_gnt_i instr_rvalid_i instr_rdata_i* instr_err_i}]
+set_input_delay -max -add_delay -clock clk_sys [expr $TCK_SYS * 0.20] [get_ports {instr_gnt_i instr_rvalid_i instr_rdata_i* instr_err_i}]
+
+# Data memory interface
+set_input_delay -min -add_delay -clock clk_sys [expr $TCK_SYS * 0.10] [get_ports {data_gnt_i data_rvalid_i data_rdata_i* data_err_i}]
+set_input_delay -max -add_delay -clock clk_sys [expr $TCK_SYS * 0.20] [get_ports {data_gnt_i data_rvalid_i data_rdata_i* data_err_i}]
 
 
-##########
-## JTAG ##
-##########
-puts "JTAG..."
+##############
+## Outputs  ##
+##############
+puts "Outputs..."
 
-set_input_delay  -min -add_delay -clock clk_jtg [ expr $TCK_JTG * 0.10 ] [get_ports {jtag_tdi_i jtag_tms_i}]
-set_input_delay  -max -add_delay -clock clk_jtg [ expr $TCK_JTG * 0.30 ] [get_ports {jtag_tdi_i jtag_tms_i}]
-set_output_delay -min -add_delay -clock clk_jtg [ expr $TCK_JTG * 0.10 ] [get_ports jtag_tdo_o]
-set_output_delay -max -add_delay -clock clk_jtg [ expr $TCK_JTG * 0.20 ] [get_ports jtag_tdo_o]
+# Instruction memory interface
+set_output_delay -min -add_delay -clock clk_sys [expr $TCK_SYS * 0.10] [get_ports {instr_req_o instr_addr_o*}]
+set_output_delay -max -add_delay -clock clk_sys [expr $TCK_SYS * 0.20] [get_ports {instr_req_o instr_addr_o*}]
 
-# Reset should propagate to system domain within a clock cycle.
-set_input_delay -max [ expr $TCK_JTG * 0.10 ] [get_ports jtag_trst_ni]  
-set_false_path -hold    -from [get_ports jtag_trst_ni]
-set_max_delay $TCK_JTG  -from [get_ports jtag_trst_ni]
+# Data memory interface
+set_output_delay -min -add_delay -clock clk_sys [expr $TCK_SYS * 0.10] [get_ports {data_req_o data_we_o data_be_o* data_addr_o* data_wdata_o*}]
+set_output_delay -max -add_delay -clock clk_sys [expr $TCK_SYS * 0.20] [get_ports {data_req_o data_we_o data_be_o* data_addr_o* data_wdata_o*}]
 
-
-##########
-## GPIO ##
-##########
-puts "GPIO..."
-
-set_input_delay  -min -add_delay -clock clk_sys [ expr $TCK_SYS * 0.10 ] [get_ports {gpio*}]
-set_input_delay  -max -add_delay -clock clk_sys [ expr $TCK_SYS * 0.30 ] [get_ports {gpio*}]
-
-set_output_delay -min -add_delay -clock clk_sys [ expr $TCK_SYS * 0.10 ] [get_ports {gpio*}]
-set_output_delay -max -add_delay -clock clk_sys [ expr $TCK_SYS * 0.30 ] [get_ports {gpio*}]
-
-# The timing of these signals are not important but we want to keep them in-cycle
-set_output_delay -min -add_delay -clock clk_sys [ expr $TCK_SYS * 0.10 ] [get_ports {status_o unused*}]
-set_output_delay -max -add_delay -clock clk_sys [ expr $TCK_SYS * 0.10 ] [get_ports {status_o unused*}]
-
-
-##########
-## UART ##
-##########
-puts "UART..."
-
-set_input_delay  -min -add_delay -clock clk_sys [ expr $TCK_SYS * 0.10 ] [get_ports uart_rx_i]
-set_input_delay  -max -add_delay -clock clk_sys [ expr $TCK_SYS * 0.30 ] [get_ports uart_rx_i]
-set_output_delay -min -add_delay -clock clk_sys [ expr $TCK_SYS * 0.10 ] [get_ports uart_tx_o]
-set_output_delay -max -add_delay -clock clk_sys [ expr $TCK_SYS * 0.30 ] [get_ports uart_tx_o]
+# Status and error outputs
+set_output_delay -min -add_delay -clock clk_sys [expr $TCK_SYS * 0.10] [get_ports {core_busy_o rel_error_o}]
+set_output_delay -max -add_delay -clock clk_sys [expr $TCK_SYS * 0.10] [get_ports {core_busy_o rel_error_o}]

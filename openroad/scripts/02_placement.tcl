@@ -74,6 +74,9 @@ set_thread_count 8
 # timing_driven:      Prioritize near-critical timing paths (reduce their length)
 
 # Rough placement to get parasitics from steiner-tree estimate so we can run repair_timing
+
+place_pins -hor_layers Metal3 -ver_layers Metal2
+
 utl::report "Global Placement (1)"
 global_placement -density 0.60
 report_metrics "02-02_${proj_name}.gpl1"

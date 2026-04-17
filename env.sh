@@ -22,10 +22,9 @@ echo "[INFO][ENV] Croc root: $CROC_ROOT"
 ######################
 # Project Settings
 ######################
-export PROJ_NAME="${PROJ_NAME:-croc}"
-export TOP_DESIGN="${TOP_DESIGN:-croc_chip}"
+export PROJ_NAME="${PROJ_NAME:-core}"
+export TOP_DESIGN="${TOP_DESIGN:-core_wrap}"
 export DUT_DESIGN="${DUT_DESIGN:-croc_soc}"
-
 
 ###################
 # PDK Discovery

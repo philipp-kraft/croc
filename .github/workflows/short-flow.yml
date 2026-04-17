@@ -8,8 +8,8 @@ name: Short Flow
 
 on:
   push:
-    branches:
-      - '**'
+    branches-ignore:
+      - core-backend
 
 jobs:
   simulation:

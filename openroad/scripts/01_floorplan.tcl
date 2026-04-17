@@ -78,24 +78,20 @@ set powerRing  80; # reserved space for power ring
 set coreMargin [expr {$padD + $padBond + $powerRing}];
 
 utl::report "Initialize Chip"
-# coordinates are lower-left x and y, upper-right x and y
-initialize_floorplan -die_area "0 0 $chipW $chipH" \
-                     -core_area "$coreMargin $coreMargin [expr $chipW-$coreMargin] [expr $chipH-$coreMargin]" \
-                     -site "CoreSite"
-
+initialize_floorplan -utilization 60 -aspect_ratio 1.0 -core_space 0.0 -site CoreSite
 
 utl::report "###############################################################################"
 utl::report "# 01-03: Padring"
 utl::report "###############################################################################"
-source src/padring.tcl
+# source src/padring.tcl
 
 
-##########################################################################
-# RAM sizes
-##########################################################################
-set RamMaster256x64   [[ord::get_db] findMaster "RM_IHPSG13_1P_256x64_c2_bm_bist"]
-set RamSize256x64_W   [ord::dbu_to_microns [$RamMaster256x64 getWidth]]
-set RamSize256x64_H   [ord::dbu_to_microns [$RamMaster256x64 getHeight]]
+# ##########################################################################
+# # RAM sizes
+# ##########################################################################
+# set RamMaster256x64   [[ord::get_db] findMaster "RM_IHPSG13_1P_256x64_c2_bm_bist"]
+# set RamSize256x64_W   [ord::dbu_to_microns [$RamMaster256x64 getWidth]]
+# set RamSize256x64_H   [ord::dbu_to_microns [$RamMaster256x64 getHeight]]
 
 
 ##########################################################################
@@ -120,47 +116,47 @@ make_tracks
 set siteHeight        [ord::dbu_to_microns [[dpl::get_row_site] getHeight]]
 
 
-utl::report "###############################################################################"
-utl::report "# 01-04: Macro Placement"
-utl::report "###############################################################################"
-# Paths to the instances of macros
-utl::report "Macro Names"
-source src/instances.tcl
+# utl::report "###############################################################################"
+# utl::report "# 01-04: Macro Placement"
+# utl::report "###############################################################################"
+# # Paths to the instances of macros
+# utl::report "Macro Names"
+# source src/instances.tcl
 
-# Placing macros
-# use these for macro placement
-set floorPaddingX      12.0
-set floorPaddingY      12.0
-set floor_leftX       [expr $core_leftX + $floorPaddingX]
-set floor_bottomY     [expr $core_bottomY + $floorPaddingY]
-set floor_rightX      [expr $core_rightX - $floorPaddingX]
-set floor_topY        [expr $core_topY - $floorPaddingY]
-set floor_midpointX   [expr $floor_leftX + ($floor_rightX - $floor_leftX)/2]
-set floor_midpointY   [expr $floor_bottomY + ($floor_topY - $floor_bottomY)/2]
+# # Placing macros
+# # use these for macro placement
+# set floorPaddingX      12.0
+# set floorPaddingY      12.0
+# set floor_leftX       [expr $core_leftX + $floorPaddingX]
+# set floor_bottomY     [expr $core_bottomY + $floorPaddingY]
+# set floor_rightX      [expr $core_rightX - $floorPaddingX]
+# set floor_topY        [expr $core_topY - $floorPaddingY]
+# set floor_midpointX   [expr $floor_leftX + ($floor_rightX - $floor_leftX)/2]
+# set floor_midpointY   [expr $floor_bottomY + ($floor_topY - $floor_bottomY)/2]
 
-utl::report "Place Macros"
+# utl::report "Place Macros"
 
-# Bank0
-set X [expr $floor_midpointX - $RamSize256x64_W/2]
-set Y [expr $floor_topY - $RamSize256x64_H]
-placeInstance $bank0_sram0 $X $Y R0
+# # Bank0
+# set X [expr $floor_midpointX - $RamSize256x64_W/2]
+# set Y [expr $floor_topY - $RamSize256x64_H]
+# placeInstance $bank0_sram0 $X $Y R0
 
-# Bank1
-set X [expr $X]
-set Y [expr $floor_bottomY]
-placeInstance $bank1_sram0 $X $Y MX
+# # Bank1
+# set X [expr $X]
+# set Y [expr $floor_bottomY]
+# placeInstance $bank1_sram0 $X $Y MX
 
-# defined in init_tech.tcl
-insertTapCells
+# # defined in init_tech.tcl
+# insertTapCells
 
-cut_rows -halo_width_x 1 -halo_width_y 2
-global_connect
+# cut_rows -halo_width_x 1 -halo_width_y 2
+# global_connect
 
 
 utl::report "###############################################################################"
 utl::report "# 01-04: Power Grid"
 utl::report "###############################################################################"
-source scripts/power_grid.tcl
+# source scripts/power_grid.tcl
 
 # Save checkpoint
 save_checkpoint 01_${proj_name}.floorplan

@@ -1,15 +1,18 @@
 #!/usr/bin/env bash
 set -e
 
+PROJ_NAME=core
+TOP_DESIGN=core_wrap
+
 case "$1" in
   synth)
     cd yosys
-    ./run_synthesis.sh --synth
+    PROJ_NAME=$PROJ_NAME TOP_DESIGN=$TOP_DESIGN ./run_synthesis.sh --synth
     ;;
 
   pnr)
     cd openroad
-    ./run_backend.sh --all
+    PROJ_NAME=$PROJ_NAME TOP_DESIGN=$TOP_DESIGN ./run_backend.sh --all
     ;;
 
   gds)
@@ -32,11 +35,9 @@ case "$1" in
 
   all)
     cd yosys
-    ./run_synthesis.sh --synth
+    PROJ_NAME=$PROJ_NAME TOP_DESIGN=$TOP_DESIGN ./run_synthesis.sh --synth
     cd ../openroad
-    ./run_backend.sh --all
-    cd ../klayout
-    ./run_finishing.sh --gds
+    PROJ_NAME=$PROJ_NAME NETLIST=$NETLIST TOP_DESIGN=$TOP_DESIGN ./run_backend.sh --all
     ;;
 
   *)

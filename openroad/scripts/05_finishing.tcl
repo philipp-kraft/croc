@@ -38,9 +38,9 @@ utl::report "###################################################################
 utl::report "# Stage 05: FINISHING"
 utl::report "###############################################################################"
 
-utl::report "Filler placement"
-# stdfill is defined in init_tech.tcl
-filler_placement $stdfill
+# utl::report "Filler placement"
+# # stdfill is defined in init_tech.tcl
+# filler_placement $stdfill
 
 utl::report "Global connect"
 global_connect
