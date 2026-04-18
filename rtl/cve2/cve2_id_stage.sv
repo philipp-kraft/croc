@@ -174,7 +174,9 @@ module cve2_id_stage #(
                                                         // access to finish before proceeding
   output logic                      perf_wfi_wait_o,
   output logic                      perf_div_wait_o,
-  output logic                      instr_id_done_o
+  output logic                      instr_id_done_o,
+
+  output logic                      rel_error_o
 );
 
   import cve2_pkg::*;
@@ -474,6 +476,7 @@ module cve2_id_stage #(
 
   assign rf_rbank_remap_a_o = (rel_phase_q == SECONDARY);
   assign rf_rbank_remap_b_o = (rel_phase_q == SECONDARY);
+  assign rel_error_o        = rel_error_q;
 
   ///////////////
   // ID-EX FSM //

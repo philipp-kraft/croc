@@ -85,8 +85,9 @@ module cve2_core_tracing import cve2_pkg::*; #(
   input  logic                         fetch_enable_i,
   input  logic                         reliable_mode_i,
   input  logic                         rv32e_mode_i,
-  output logic                         core_busy_o
+  output logic                         core_busy_o,
 
+  output logic                         rel_error_o
 );
 
   // cve2_tracer relies on the signals from the RISC-V Formal Interface
@@ -234,7 +235,8 @@ module cve2_core_tracing import cve2_pkg::*; #(
     .fetch_enable_i,
     .reliable_mode_i,
     .rv32e_mode_i,
-    .core_busy_o
+    .core_busy_o,
+    .rel_error_o
   );
 
   cve2_tracer u_cve2_tracer (

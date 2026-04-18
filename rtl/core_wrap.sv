@@ -79,7 +79,9 @@ module core_wrap import croc_pkg::*; #() (
   input  logic        reliable_mode_i,
 
   // core_busy_o: power-management hint to the SoC; drive 1'b0 if not available
-  output logic        core_busy_o
+  output logic        core_busy_o,
+
+  output logic        rel_error_o
 );
 
   // CVE2: debug halt/exception vectors are provided as runtime inputs.
@@ -177,7 +179,8 @@ module core_wrap import croc_pkg::*; #() (
     .fetch_enable_i,
     .rv32e_mode_i,
     .reliable_mode_i,
-    .core_busy_o
+    .core_busy_o,
+    .rel_error_o
   );
 
 endmodule

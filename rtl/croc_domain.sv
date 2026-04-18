@@ -52,6 +52,7 @@ module croc_domain import croc_pkg::*; #(
 
   logic core_rst_req;
   logic core_rst_n;
+  logic core_rel_error;
 
   core_mode_t core_mode_pending;
   core_mode_t core_mode_active;
@@ -258,7 +259,8 @@ module croc_domain import croc_pkg::*; #(
     .rv32e_mode_i    ( core_mode_active.rv32e    ),
     .reliable_mode_i ( core_mode_active.reliable ),
 
-    .core_busy_o     ( core_busy_o )
+    .core_busy_o     ( core_busy_o ),
+    .rel_error_o     ( core_rel_error )
   );
 
   // -----------------
@@ -586,7 +588,7 @@ module croc_domain import croc_pkg::*; #(
     .clk_i          ( clk_i        ),
     .rst_ni         ( rst_ni       ),
     .testmode_i     ( testmode_i   ),
-    .core_rst_req_i ( core_rst_req ),
+    .core_rst_req_i ( core_rst_req | core_rel_error ),
     .core_rst_no    ( core_rst_n   )
   );
 

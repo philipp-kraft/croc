@@ -126,7 +126,9 @@ module cve2_core import cve2_pkg::*; #(
   input  logic                         fetch_enable_i,
   input  logic                         rv32e_mode_i,
   input  logic                         reliable_mode_i,
-  output logic                         core_busy_o
+  output logic                         core_busy_o,
+
+  output logic                         rel_error_o
 );
 
   localparam int unsigned PMP_NUM_CHAN      = 3;
@@ -388,6 +390,7 @@ module cve2_core import cve2_pkg::*; #(
     .fetch_enable_i(fetch_enable_i),
     .rv32e_mode_i  (rv32e_mode_i),
     .reliable_mode_i(reliable_mode_i),
+    .rel_error_o    (rel_error_o),
     .ctrl_busy_o   (ctrl_busy),
     .illegal_insn_o(illegal_insn_id),
 
