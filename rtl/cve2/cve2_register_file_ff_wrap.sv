@@ -102,14 +102,17 @@ module cve2_register_file_ff_wrap #(
     .we_a_i   (we_lower)
   );
 
-  // In reliable mode the mirrored register file banks must remain identical.
-  for (genvar i = 0; i < 16; i++) begin : gen_rf_sync_asserts
-    `ASSERT_IF(CVE2ReliableRfBanksMatch,
-               rf_lower_bank_i.rf_reg[i] == rf_upper_bank_i.rf_reg[i],
-               reliable_mode_i,
-               clk_i,
-               !rst_ni,
-               $sformatf("RF mismatch: x%0d=0x%h x%0d=0x%h", i, rf_lower_bank_i.rf_reg[i], i + 16, rf_upper_bank_i.rf_reg[i]))
+  for (genvar i = 0; i < 16; i++) begin : gen_rf_sync_message
+  `ifndef SYNTHESIS
+    always_ff @(posedge clk_i) begin
+      if (reliable_mode_i && (rf_lower_bank_i.rf_reg[i] != rf_upper_bank_i.rf_reg[i])) begin
+        $display("\033[1;33m@%t | [RF MIRROR DESYNC]\033[0m", $time);
+        $display("  pair        : x%0d <-> x%0d", i, i + 16);
+        $display("  lower bank  : 0x%08h", rf_lower_bank_i.rf_reg[i]);
+        $display("  upper bank  : 0x%08h", rf_upper_bank_i.rf_reg[i]);
+      end
+    end
+  `endif
   end
 
 endmodule

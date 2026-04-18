@@ -1145,20 +1145,24 @@ module cve2_id_stage #(
   `ASSERT(CVE2MisalignedMemoryAccess, !lsu_addr_incr_req_i)
   `endif
 
-  // TODO: remove this when we actually handle the error
   `ifndef SYNTHESIS
-    always_ff @(posedge clk_i) begin
-      if (rst_ni && rel_do_compare && !rel_match) begin
-        $fatal(1,
-              "REL mismatch: class=%0d primary=(0x%08h, 0x%08h) secondary=(0x%08h, 0x%08h) pc=0x%08h",
-              rel_primary_result_q.instr_class,
-              rel_primary_result_q.cmp_val0,
-              rel_primary_result_q.cmp_val1,
-              rel_current_result.cmp_val0,
-              rel_current_result.cmp_val1,
-              pc_id_i);
-      end
+  always_ff @(posedge clk_i) begin
+    if (rst_ni && !rel_error_q && rel_do_compare && !rel_match) begin
+      $display("\033[1;31m@%t | [REL MISMATCH DETECTED]\033[0m", $time);
+      $display("  pc          : 0x%08h", pc_id_i);
+      $display("  instr_class : %s", rel_primary_result_q.instr_class.name());
+
+    if (rel_primary_result_q.cmp_val0 != rel_current_result.cmp_val0)
+      $display("  cmp_val0    : \033[31m0x%08h -> 0x%08h\033[0m", rel_primary_result_q.cmp_val0, rel_current_result.cmp_val0);
+    else
+      $display("  cmp_val0    : 0x%08h -> 0x%08h", rel_primary_result_q.cmp_val0, rel_current_result.cmp_val0);
+
+    if (rel_primary_result_q.cmp_val1 != rel_current_result.cmp_val1)
+      $display("  cmp_val1    : \033[31m0x%08h -> 0x%08h\033[0m", rel_primary_result_q.cmp_val1, rel_current_result.cmp_val1);
+    else
+      $display("  cmp_val1    : 0x%08h -> 0x%08h", rel_primary_result_q.cmp_val1, rel_current_result.cmp_val1);
     end
+  end
   `endif
 
 endmodule
