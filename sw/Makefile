@@ -40,10 +40,9 @@ INCDIR   ?= lib/inc
 
 # Collecting source files
 LIB_SOURCES         := $(wildcard $(SRCDIR)/*.[cS])
-TOP_SOURCES         := $(filter-out $(CRT0), $(wildcard *.[cS]))
-TEST_SOURCES        := $(wildcard test/*.[cS]) $(wildcard test/isa/*.[cS])
-COMMON_TEST_SOURCES := $(filter-out test/test_rv32e_%,$(TEST_SOURCES))
-PROG_SOURCES        ?= $(TOP_SOURCES) $(TEST_SOURCES)
+COMMON_SOURCES      := $(wildcard src/common/*.[cS]) $(wildcard src/isa/*.[cS])
+RV32E_SOURCES        := $(wildcard src/rv32e/*.[cS])
+PROG_SOURCES        ?= $(COMMON_SOURCES) $(RV32E_SOURCES)
 
 PROG_NAMES   := $(basename $(PROG_SOURCES))
 
@@ -108,7 +107,7 @@ rv32i:
 		RISCV_MABI=ilp32 \
 		BINDIR=$(BINDIR_BASE)/rv32i \
 		BUILDDIR=$(BUILDDIR_BASE)/rv32i \
-		PROG_SOURCES="$(TOP_SOURCES) $(COMMON_TEST_SOURCES)"
+		PROG_SOURCES="$(COMMON_SOURCES)"
 
 # Build all binaries in E-mode
 rv32e:
@@ -117,7 +116,7 @@ rv32e:
 		RISCV_MABI=ilp32e \
 		BINDIR=$(BINDIR_BASE)/rv32e \
 		BUILDDIR=$(BUILDDIR_BASE)/rv32e \
-		PROG_SOURCES="$(TOP_SOURCES) $(TEST_SOURCES)" \
+		PROG_SOURCES="$(COMMON_SOURCES) $(RV32E_SOURCES)" \
 		EXTRA_CFLAGS="-DRELIABLE_MODE"
 
 clean:

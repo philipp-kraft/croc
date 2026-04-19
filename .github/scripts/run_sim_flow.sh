@@ -30,10 +30,10 @@ make -C sw all
 # build verilator simulation and run helloworld
 cd verilator
 ./run_verilator.sh --build
-./run_verilator.sh --run ../sw/bin/rv32i/helloworld.hex
+./run_verilator.sh --run ../sw/bin/rv32i/src/common/helloworld.hex
 grep -q "\[UART\] Hello World from Croc!" croc.log || exit 1
 
-./run_verilator.sh --run ../sw/bin/rv32i/test/print_config.hex
+./run_verilator.sh --run ../sw/bin/rv32i/src/common/print_config.hex
 "$SCRIPT_DIR/check_sim.sh" croc.log
 
 cd "$CROC_ROOT"
@@ -50,25 +50,30 @@ echo "============================================="
 cd verilator
 ./run_verilator.sh --build
 
-# run RV32I tests
+# run RV32I common tests
 "$SCRIPT_DIR/run_tests.sh" \
-    --hexdir ../sw/bin/rv32i/test \
-    --label rv32i
+    --hexdir ../sw/bin/rv32i/src/common \
+    --label rv32i-common
 
-# run RV32I ISA tests with reliablity on
+# run RV32I ISA tests
 "$SCRIPT_DIR/run_tests.sh" \
-    --hexdir ../sw/bin/rv32i/test/isa \
+    --hexdir ../sw/bin/rv32i/src/isa \
     --label rv32i-isa \
     --filter '*'
 
-# run RV32E tests
+# run RV32E common tests
 "$SCRIPT_DIR/run_tests.sh" \
-    --hexdir ../sw/bin/rv32e/test \
-    --label rv32e
+    --hexdir ../sw/bin/rv32e/src/common \
+    --label rv32e-common
+
+# run RV32E specific tests
+"$SCRIPT_DIR/run_tests.sh" \
+    --hexdir ../sw/bin/rv32e/src/rv32e \
+    --label rv32e-specific
 
 # run RV32E ISA tests with reliablity on
 "$SCRIPT_DIR/run_tests.sh" \
-    --hexdir ../sw/bin/rv32e/test/isa \
+    --hexdir ../sw/bin/rv32e/src/isa \
     --label rv32e-isa \
     --filter '*'
 
