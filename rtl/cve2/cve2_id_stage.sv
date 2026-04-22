@@ -398,6 +398,7 @@ module cve2_id_stage #(
       end
       REL_CSR: begin
         rel_current_result.cmp_val0 = alu_operand_a; // rs1
+        rel_current_result.cmp_val1 = alu_operand_b; // addr
       end
       default:;
     endcase
