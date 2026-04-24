@@ -36,6 +36,11 @@
 .section .text
 .globl _start
 _start:
+  lui     t0, 0x03000        # t0 = SOC_CTRL base (0x0300_0000)
+  lw      t0, 0x20(t0)       # t0 = core reset cause (CORE_RST_CAUSE register)
+  andi    t1, t0, 0x06       # check for bit 1 or bit 2
+  bnez    t1, register_init  # skip WFI when sw reset or rel mismatch
+
   csrwi   mie, 8       # Enable M-mode software interrupt
   wfi                  # Sleep until interrupt
   lui     t0, 0x02040  # t0 = CLINT base (0x0204_0000)
@@ -46,6 +51,7 @@ _start:
 # Register Initialization
 # Clear x1, x3-x15. Skip x2 stack pointer, set by main sw (needs SRAM size)
 # -----------------------------------------------------------------------------
+register_init:
 # addi    x1,  zero, 0 # x1 is ra, used later, so we can skip clearing it
 # addi    x2,  zero, 0 # x2 is sp, set by SRAM stub, so we can skip clearing it
   addi    x3,  zero, 0

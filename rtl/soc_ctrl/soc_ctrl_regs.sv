@@ -22,7 +22,8 @@ module soc_ctrl_regs #(
   output logic             fetch_en_o,
   output logic             sram_dly_o,
   output logic             core_rst_req_o,
-  output core_mode_t       core_mode_pending_o
+  output core_mode_t       core_mode_pending_o,
+  input logic              core_rel_error_i
 );
   import soc_ctrl_regs_pkg::*;
 
@@ -57,12 +58,13 @@ module soc_ctrl_regs #(
   };
 
   // read-write registers
-  logic [31:0]   boot_addr_d,   boot_addr_q;
-  logic           fetch_en_d,    fetch_en_q;
-  logic [31:0] core_status_d, core_status_q;
-  logic          boot_mode_d,   boot_mode_q;
-  logic           sram_dly_d,    sram_dly_q;
-  core_mode_t   core_mode_d,    core_mode_q;
+  logic [31:0]        boot_addr_d,      boot_addr_q;
+  logic                fetch_en_d,       fetch_en_q;
+  logic [31:0]      core_status_d,    core_status_q;
+  logic               boot_mode_d,      boot_mode_q;
+  logic                sram_dly_d,       sram_dly_q;
+  core_mode_t         core_mode_d,      core_mode_q;
+  logic [3:0]    core_rst_cause_d, core_rst_cause_q;
 
   `FF(boot_addr_q, boot_addr_d,              BootAddrDefault, clk_i, rst_ni)
   `FF(fetch_en_q, fetch_en_d,                           1'b1, clk_i, rst_ni)
@@ -70,6 +72,7 @@ module soc_ctrl_regs #(
   `FF(boot_mode_q, boot_mode_d,                           '0, clk_i, rst_ni)
   `FF(sram_dly_q, sram_dly_d,                             '0, clk_i, rst_ni)
   `FF(core_mode_q, core_mode_d, '{reliable:1'b0, rv32e:1'b0}, clk_i, rst_ni)
+  `FF(core_rst_cause_q, core_rst_cause_d,            4'b0001, clk_i, rst_ni)
 
   // OBI handling, A-phase fields needed in the R-phase
   logic                               req_q;
@@ -97,13 +100,14 @@ module soc_ctrl_regs #(
 
   // Address phase: update writable registers
   always_comb begin : write_fsm
-    boot_addr_d    = boot_addr_q;
-    fetch_en_d     = fetch_en_q;
-    core_status_d  = core_status_q;
-    boot_mode_d    = boot_mode_q;
-    sram_dly_d     = sram_dly_q;
-    core_mode_d    = core_mode_q;
-    core_rst_req_o = 1'b0;
+    boot_addr_d      = boot_addr_q;
+    fetch_en_d       = fetch_en_q;
+    core_status_d    = core_status_q;
+    boot_mode_d      = boot_mode_q;
+    sram_dly_d       = sram_dly_q;
+    core_mode_d      = core_mode_q;
+    core_rst_req_o   = 1'b0;
+    core_rst_cause_d = core_rst_cause_q;
 
     if (obi_req_i.req && obi_req_i.a.we) begin
       unique case ({obi_req_i.a.addr[IntAddrWidth-1:2], 2'b00})
@@ -118,9 +122,18 @@ module soc_ctrl_regs #(
             core_mode_d = core_mode_wdata;
           end
         end
+        SOC_CTRL_CORE_RST_CAUSE_OFFSET: begin
+          if (be_mask[0]) begin
+            core_rst_cause_d = core_rst_cause_q & ~obi_req_i.a.wdata[3:0]; // write 1 to clear
+          end
+        end
         default: ;  // invalid address: no write, error signalled in R phase
       endcase
     end
+
+    // update core_rst_cause register
+    if (core_rst_req_o)   core_rst_cause_d[1] = 1'b1; // sw reset
+    if (core_rel_error_i) core_rst_cause_d[2] = 1'b1; // rel mismatch reset
   end
 
   // Response phase: send back read data or acknowledge write
@@ -133,13 +146,14 @@ module soc_ctrl_regs #(
     if (req_q) begin
       if (!we_q) begin
         unique case ({addr_q, 2'b00})
-          SOC_CTRL_BOOTADDR_OFFSET:        obi_rsp_o.r.rdata = boot_addr_q;
-          SOC_CTRL_FETCHEN_OFFSET:         obi_rsp_o.r.rdata = {31'h0, fetch_en_q};
-          SOC_CTRL_CORESTATUS_OFFSET:      obi_rsp_o.r.rdata = core_status_q;
-          SOC_CTRL_BOOTMODE_OFFSET:        obi_rsp_o.r.rdata = {31'h0, boot_mode_q};
-          SOC_CTRL_SRAM_DLY_OFFSET:        obi_rsp_o.r.rdata = {31'b0, sram_dly_q};
-          SOC_CTRL_INFO_OFFSET:            obi_rsp_o.r.rdata = HwInfoWord;
-          SOC_CTRL_CORE_MODE_OFFSET:       obi_rsp_o.r.rdata = {30'b0, core_mode_q};
+          SOC_CTRL_BOOTADDR_OFFSET:       obi_rsp_o.r.rdata = boot_addr_q;
+          SOC_CTRL_FETCHEN_OFFSET:        obi_rsp_o.r.rdata = {31'h0, fetch_en_q};
+          SOC_CTRL_CORESTATUS_OFFSET:     obi_rsp_o.r.rdata = core_status_q;
+          SOC_CTRL_BOOTMODE_OFFSET:       obi_rsp_o.r.rdata = {31'h0, boot_mode_q};
+          SOC_CTRL_SRAM_DLY_OFFSET:       obi_rsp_o.r.rdata = {31'b0, sram_dly_q};
+          SOC_CTRL_INFO_OFFSET:           obi_rsp_o.r.rdata = HwInfoWord;
+          SOC_CTRL_CORE_MODE_OFFSET:      obi_rsp_o.r.rdata = {30'b0, core_mode_q};
+          SOC_CTRL_CORE_RST_CAUSE_OFFSET: obi_rsp_o.r.rdata = {28'b0, core_rst_cause_q};
           default: begin
             obi_rsp_o.r.rdata = 32'hBADCAB1E;
             obi_rsp_o.r.err   = 1'b1;
@@ -153,7 +167,8 @@ module soc_ctrl_regs #(
           SOC_CTRL_BOOTMODE_OFFSET,
           SOC_CTRL_SRAM_DLY_OFFSET,
           SOC_CTRL_CORE_RST_REQ_OFFSET,
-          SOC_CTRL_CORE_MODE_OFFSET:  ;  // valid write, no error
+          SOC_CTRL_CORE_MODE_OFFSET,
+          SOC_CTRL_CORE_RST_CAUSE_OFFSET:  ;  // valid write, no error
           default: obi_rsp_o.r.err = 1'b1;
         endcase
       end

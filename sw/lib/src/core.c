@@ -9,7 +9,6 @@
 #include "util.h"
 
 void core_reset() {
-    CLINT_MSIP   = 0x1; // otherwise core will not wake up (stuck at wfi in bootrom)
     CORE_RST_REG = 0x1; // reset the core
 }
 
@@ -50,4 +49,12 @@ bool core_mode_switch(core_isa_t isa, core_reliability_t reliability) {
     }
 
     return true;
+}
+
+core_rst_cause_t core_get_rst_cause(void) {
+    return CORE_RST_CAUSE_REG;
+}
+
+void core_clear_rst_cause(core_rst_cause_t cause) {
+    CORE_RST_CAUSE_REG = cause;
 }

@@ -579,7 +579,8 @@ module croc_domain import croc_pkg::*; #(
     .fetch_en_o           ( fetch_enable      ),
     .sram_dly_o           ( sram_impl         ),
     .core_rst_req_o       ( core_rst_req      ),
-    .core_mode_pending_o  ( core_mode_pending )
+    .core_mode_pending_o  ( core_mode_pending ),
+    .core_rel_error_i     ( core_rel_error    )
   );
 
   core_rst_ctrl #(
