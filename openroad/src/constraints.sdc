@@ -12,8 +12,8 @@
 ## Driving Cells and Loads ##
 #############################
 
-# set_load 0.5 [all_outputs]
-# set_driving_cell [all_inputs] -lib_cell sg13g2_buf_2
+set_load 0.05 [all_outputs]
+set_driving_cell [all_inputs] -lib_cell sg13g2_buf_4
 
 
 ##################
@@ -22,7 +22,7 @@
 puts "Clocks..."
 
 # Target 100 MHz
-set TCK_SYS 7
+set TCK_SYS 6.8
 create_clock -name clk_sys -period $TCK_SYS [get_ports clk_i]
 
 
@@ -44,10 +44,10 @@ set_input_delay -max [expr $TCK_SYS * 0.10] [get_ports {rst_ni test_enable_i}]
 set_false_path -hold -from [get_ports {rst_ni test_enable_i}]
 set_max_delay $TCK_SYS -from [get_ports {rst_ni test_enable_i}]
 
-# Mode selection (sampled at boot)
-# set_input_delay -max [expr $TCK_SYS * 0.10] [get_ports {rv32e_mode_i reliable_mode_i}]
-# set_false_path -hold -from [get_ports {rv32e_mode_i reliable_mode_i}]
-# set_max_delay $TCK_SYS -from [get_ports {rv32e_mode_i reliable_mode_i}] -to [all_outputs]
+# Mode selection (sampled at boot) 
+set_false_path -from [get_ports {rv32e_mode_i reliable_mode_i}]
+set_input_delay -min -add_delay -clock clk_sys [expr $TCK_SYS * 0.10] [get_ports {rv32e_mode_i reliable_mode_i}]
+set_input_delay -max -add_delay -clock clk_sys [expr $TCK_SYS * 0.20] [get_ports {rv32e_mode_i reliable_mode_i}]
 
 # Interrupts
 set_input_delay -min -add_delay -clock clk_sys [expr $TCK_SYS * 0.10] [get_ports {irqs_i* timer_irq_i software_irq_i}]
