@@ -175,4 +175,22 @@ module tb_croc_soc #(
     `endif
   end
 
+  always @(posedge sys_clk) begin
+    if ($rose(i_croc_soc.i_croc.i_core_wrap.i_core.rv32e_mode_i)) begin
+      $display("@%t | [CORE] RV32E active at cycle=%0d", $time, $time / 50);
+    end
+  end
+
+  always @(posedge sys_clk) begin
+    if ($rose(i_croc_soc.i_croc.i_core_wrap.i_core.reliable_mode_i)) begin
+      $display("@%t | [CORE] REL active at cycle=%0d", $time, $time / 50);
+    end
+  end
+
+  localparam realtime TTest = 0.8 * ClkPeriodSys;
+
+  `ifdef VC_Z01X
+    `include "strobe.sv"
+  `endif
+
 endmodule

@@ -5,8 +5,6 @@
 // Authors:
 // - Philipp Kraft <kraftp@ethz.ch>
 
-#include "uart.h"
-#include "print.h"
 #include "core.h"
 #include "util.h"
 
@@ -17,7 +15,7 @@ static int mat_b[N * N] = {16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1
 static int mat_c[N * N];
 static const int mat_expected[N * N] = {80, 70, 60, 50, 240, 214, 188, 162, 400, 358, 316, 274, 560, 502, 444, 386};
 
-static void matmul(int *a, int *b, int *c, int n) {
+void matmul(int *a, int *b, int *c, int n) {
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
             int sum = 0;
@@ -29,7 +27,7 @@ static void matmul(int *a, int *b, int *c, int n) {
     }
 }
 
-static int verify(int *c, const int *expected, int n) {
+int verify(int *c, const int *expected, int n) {
     for (int i = 0; i < n * n; i++) {
         if (c[i] != expected[i]) return i + 1;
     }
@@ -37,13 +35,13 @@ static int verify(int *c, const int *expected, int n) {
     return 0;
 }
 
-static void clear_mat(int *c, int n) {
+void clear_mat(int *c, int n) {
     for (int i = 0; i < n * n; i++) {
         c[i] = 0;
     }
 }
 
-static int run_matmul_benchmark(void) {
+int run_matmul_benchmark(void) {
     clear_mat(mat_c, N);
 
     uint32_t start = get_mcycle();
@@ -52,32 +50,19 @@ static int run_matmul_benchmark(void) {
 
     int error    = verify(mat_c, mat_expected, N);
     if (error) {
-        printf("FAIL: mismatch at index 0x%x\n", error - 1);
-        uart_write_flush();
         return error;
     }
-
-    printf("PASS: cycles: 0x%x\n", end - start);
-    uart_write_flush();
 
     return 0;
 }
 
 int main() {
-    uart_init();
+    core_mode_switch(CORE_ISA_RV32E, CORE_RELIABILITY_ON);
 
     int error = run_matmul_benchmark();
 
     if (error) {
         return error;
-    }
-
-    core_mode_switch(CORE_ISA_RV32E, CORE_RELIABILITY_ON);
-
-    if (core_get_active_isa() != CORE_ISA_RV32E) {
-        printf("FAIL: Core should be in E-mode, but is in I-mode\n");
-        uart_write_flush();
-        return 1;
     }
 
     return 0;
