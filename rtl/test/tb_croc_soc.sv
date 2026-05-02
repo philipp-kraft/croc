@@ -175,6 +175,7 @@ module tb_croc_soc #(
     `endif
   end
 
+  `ifndef TARGET_NETLIST_YOSYS
   always @(posedge sys_clk) begin
     if ($rose(i_croc_soc.i_croc.i_core_wrap.i_core.rv32e_mode_i)) begin
       $display("@%t | [CORE] RV32E active at cycle=%0d", $time, $time / 50);
@@ -186,6 +187,7 @@ module tb_croc_soc #(
       $display("@%t | [CORE] REL active at cycle=%0d", $time, $time / 50);
     end
   end
+  `endif
 
   localparam realtime TTest = 0.8 * ClkPeriodSys;
 
