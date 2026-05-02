@@ -17,9 +17,9 @@ static const int data_init[N] = {42, -7,  13, 0,   -128, 99, 7,   7,   -1, 55,  
                                  50, -11, 33, -44, 85,   9,  -90, 12,  67, -2,  41,  -36, 58,  3,  -77, 24,
                                  31, -8,  95, -19, 4,    62, -55, 16,  28, -13, 70,  -25, 11,  47, -66, 20};
 
-static volatile int arr[N];
+static int arr[N];
 
-void insertion_sort(volatile int *a, int n) {
+void insertion_sort(int *a, int n) {
     for (int i = 1; i < n; i++) {
         int key = a[i];
         int j   = i - 1;
@@ -31,13 +31,13 @@ void insertion_sort(volatile int *a, int n) {
     }
 }
 
-void reset_array(volatile int *dst, const int *src, int n) {
+void reset_array(int *dst, const int *src, int n) {
     for (int i = 0; i < n; i++) {
         dst[i] = src[i];
     }
 }
 
-int verify_sorted(volatile int *a, int n) {
+int verify_sorted(int *a, int n) {
     for (int i = 1; i < n; i++) {
         if (a[i - 1] > a[i]) return i;
     }
