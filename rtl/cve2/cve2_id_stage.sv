@@ -274,51 +274,30 @@ module cve2_id_stage #(
   // CV-X-IF
   logic stall_coproc;
 
+  typedef enum logic { FIRST_CYCLE, MULTI_CYCLE } id_fsm_e;
+  id_fsm_e id_fsm_q, id_fsm_d;
+
   /////////////
   // REL FSM //
   /////////////
 
-  typedef enum logic { PRIMARY, SECONDARY } rel_phase_e;
-
-  typedef enum logic [3:0] {
-    REL_NONE,
-    REL_SC_ALU,
-    REL_BRANCH,
-    REL_JUMP,
-    REL_LOAD,
-    REL_STORE,
-    REL_MULTDIV,
-    REL_MC_ALU,
-    REL_CSR,
-    REL_SYSTEM
-  } rel_instr_class_e;
-
-  typedef struct packed {
-    rel_instr_class_e instr_class;
-    logic [31:0]      cmp_val0;
-    logic [31:0]      cmp_val1;
-  } rel_result_t;
-
-  // rel fsm register
+  // fsm
   rel_phase_e  rel_phase_q, rel_phase_d;
   rel_result_t rel_primary_result_q, rel_primary_result_d;
   logic        rel_error_q, rel_error_d;
 
-  // rel signals
-  logic single_cycle_ex_dec;
+  // type of rel_instr from decoder
   rel_instr_class_e rel_instr_class_dec;
 
+  // comb result of instruction
   rel_result_t rel_current_result;
 
-  logic rel_instr_supported;
+  logic rel_instr_active;
   logic rel_sub_op_rdy;
   logic rel_do_capture;
   logic rel_do_compare;
-
-  logic stall_rel;
-  logic rel_commit;
-
   logic rel_match;
+  logic rel_commit;
 
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
@@ -332,40 +311,15 @@ module cve2_id_stage #(
     end
   end
 
-  assign single_cycle_ex_dec = rf_we_dec &
-                                 ~lsu_req_dec &
-                                 ~multdiv_en_dec &
-                                 ~branch_in_dec &
-                                 ~jump_in_dec &
-                                 ~alu_multicycle_dec &
-                                 ~illegal_insn_dec &
-                                 ~illegal_csr_insn_i &
-                                 ~csr_access_o;
-
-  // rel instruction class decoder
-  always_comb begin
-    unique case (1'b1)
-      single_cycle_ex_dec:   rel_instr_class_dec = REL_SC_ALU;
-      branch_in_dec:         rel_instr_class_dec = REL_BRANCH;
-      jump_in_dec:           rel_instr_class_dec = REL_JUMP;
-      lsu_req_dec & ~lsu_we: rel_instr_class_dec = REL_LOAD;
-      lsu_req_dec & lsu_we:  rel_instr_class_dec = REL_STORE;
-      multdiv_en_dec:        rel_instr_class_dec = REL_MULTDIV;
-      alu_multicycle_dec:    rel_instr_class_dec = REL_MC_ALU;
-      csr_access_o:          rel_instr_class_dec = REL_CSR;
-      default:               rel_instr_class_dec = REL_NONE;
-    endcase
-  end
-
   always_comb begin
     unique case (rel_instr_class_dec)
-      REL_SC_ALU:  rel_sub_op_rdy = instr_done_base;
+      REL_SC_ALU:  rel_sub_op_rdy = instr_first_cycle;
       REL_BRANCH:  rel_sub_op_rdy = ex_valid_i;
       REL_JUMP:    rel_sub_op_rdy = ex_valid_i;
       REL_LOAD:    rel_sub_op_rdy = instr_first_cycle;
       REL_STORE:   rel_sub_op_rdy = instr_first_cycle;
-      REL_MULTDIV: rel_sub_op_rdy = instr_done_base;
-      REL_CSR:     rel_sub_op_rdy = instr_done_base;
+      REL_MULTDIV: rel_sub_op_rdy = ex_valid_i;
+      REL_CSR:     rel_sub_op_rdy = instr_first_cycle;
       default:     rel_sub_op_rdy = 1'b0;
     endcase
   end
@@ -434,57 +388,35 @@ module cve2_id_stage #(
 
   // rel fsm output logic
   always_comb begin
-    stall_rel  = 1'b0;
     rel_commit = 1'b1;
 
     if (reliable_mode_i) begin
       if (rel_error_q) begin
-        stall_rel  = 1'b1;
         rel_commit = 1'b0;
       end else if (rel_do_capture) begin
-        stall_rel  = 1'b1;
         rel_commit = 1'b0;
       end else if (rel_do_compare && !rel_match) begin
-        stall_rel  = 1'b1;
         rel_commit = 1'b0;
       end
     end
   end
 
-  assign rel_instr_supported =
-      rel_instr_class_dec inside {
-          REL_SC_ALU,
-          REL_BRANCH,
-          REL_JUMP,
-          REL_LOAD,
-          REL_STORE,
-          REL_MULTDIV,
-          REL_CSR
-      };
+  assign rel_instr_active = reliable_mode_i && instr_valid_i && rel_sub_op_rdy;
 
-  assign rel_do_capture = reliable_mode_i &&
-                          (rel_phase_q == PRIMARY) &&
-                          rel_instr_supported &&
-                          rel_sub_op_rdy;
-
-  assign rel_do_compare = reliable_mode_i &&
-                          (rel_phase_q == SECONDARY) &&
-                          rel_instr_supported &&
-                          rel_sub_op_rdy;
+  assign rel_do_capture = rel_instr_active && (rel_phase_q == PRIMARY);
+  assign rel_do_compare = rel_instr_active && (rel_phase_q == SECONDARY);
 
   assign rel_match = (rel_primary_result_q.cmp_val0 == rel_current_result.cmp_val0) &&
                      (rel_primary_result_q.cmp_val1 == rel_current_result.cmp_val1);
 
   assign rf_rbank_remap_a_o = (rel_phase_q == SECONDARY);
   assign rf_rbank_remap_b_o = (rel_phase_q == SECONDARY);
-  assign rel_error_o        = rel_error_q;
+  
+  assign rel_error_o = rel_error_q;
 
   ///////////////
   // ID-EX FSM //
   ///////////////
-
-  typedef enum logic { FIRST_CYCLE, MULTI_CYCLE } id_fsm_e;
-  id_fsm_e id_fsm_q, id_fsm_d;
 
   always_ff @(posedge clk_i or negedge rst_ni) begin : id_pipeline_reg
     if (!rst_ni) begin
@@ -725,7 +657,9 @@ module cve2_id_stage #(
 
     // jump/branches
     .jump_in_dec_o  (jump_in_dec),
-    .branch_in_dec_o(branch_in_dec)
+    .branch_in_dec_o(branch_in_dec),
+
+    .rel_instr_class_dec_o(rel_instr_class_dec)
   );
 
   /////////////////////////////////
@@ -1040,13 +974,13 @@ module cve2_id_stage #(
   // modifying this.
   assign stall_id_base = stall_mem | stall_multdiv | stall_jump | stall_branch |
                            stall_alu | (XInterface & stall_coproc);
-  assign stall_id        = stall_id_base | stall_rel;
+  assign stall_id        = stall_id_base | ~rel_commit;
 
   // Generally illegal instructions have no reason to stall, however they must still stall waiting
   // for outstanding memory requests so exceptions related to them take priority over the illegal
   // instruction exception.
   `ASSERT(IllegalInsnStallMustBeMemStall, illegal_insn_o & stall_id |-> stall_mem &
-    ~(stall_multdiv | stall_jump | stall_branch | stall_alu | stall_rel))
+    ~(stall_multdiv | stall_jump | stall_branch | stall_alu | ~rel_commit))
 
   assign instr_done_base = ~stall_id_base & ~flush_id & instr_executing;
   assign instr_done        = instr_done_base & rel_commit;

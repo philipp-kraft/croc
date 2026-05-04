@@ -96,7 +96,9 @@ module cve2_decoder #(
 
   // jump/branches
   output logic                     jump_in_dec_o,         // jump is being calculated in ALU
-  output logic                     branch_in_dec_o
+  output logic                     branch_in_dec_o,
+
+  output cve2_pkg::rel_instr_class_e rel_instr_class_dec_o
 );
 
   import cve2_pkg::*;
@@ -235,6 +237,8 @@ module cve2_decoder #(
     ecall_insn_o          = 1'b0;
     wfi_insn_o            = 1'b0;
 
+    rel_instr_class_dec_o = REL_NONE;
+
     opcode                = opcode_e'(instr[6:0]);
 
     unique case (opcode)
@@ -245,6 +249,8 @@ module cve2_decoder #(
 
       OPCODE_JAL: begin   // Jump and Link
         jump_in_dec_o      = 1'b1;
+
+        rel_instr_class_dec_o = REL_JUMP;
 
         if (instr_first_cycle_i) begin
           // Calculate jump target (and store PC)
@@ -258,6 +264,8 @@ module cve2_decoder #(
 
       OPCODE_JALR: begin  // Jump and Link Register
         jump_in_dec_o      = 1'b1;
+
+        rel_instr_class_dec_o = REL_JUMP;
 
         if (instr_first_cycle_i) begin
           // Calculate jump target (and store PC)
@@ -276,6 +284,9 @@ module cve2_decoder #(
 
       OPCODE_BRANCH: begin // Branch
         branch_in_dec_o       = 1'b1;
+
+        rel_instr_class_dec_o = REL_BRANCH;
+
         // Check branch condition selection
         unique case (instr[14:12])
           3'b000,
@@ -301,6 +312,8 @@ module cve2_decoder #(
         data_req_o         = 1'b1;
         data_we_o          = 1'b1;
 
+        rel_instr_class_dec_o = REL_STORE;
+
         if (instr[14]) begin
           illegal_insn = 1'b1;
         end
@@ -318,6 +331,8 @@ module cve2_decoder #(
         rf_ren_a_o          = 1'b1;
         data_req_o          = 1'b1;
         data_type_o         = 2'b00;
+
+        rel_instr_class_dec_o = REL_LOAD;
 
         // sign/zero extension
         data_sign_extension_o = ~instr[14];
@@ -344,15 +359,18 @@ module cve2_decoder #(
 
       OPCODE_LUI: begin  // Load Upper Immediate
         rf_we            = 1'b1;
+        rel_instr_class_dec_o = REL_SC_ALU;
       end
 
       OPCODE_AUIPC: begin  // Add Upper Immediate to PC
         rf_we            = 1'b1;
+        rel_instr_class_dec_o = REL_SC_ALU;
       end
 
       OPCODE_OP_IMM: begin // Register-Immediate ALU Operations
         rf_ren_a_o       = 1'b1;
         rf_we            = 1'b1;
+        rel_instr_class_dec_o = REL_SC_ALU;
 
         unique case (instr[14:12])
           3'b000,
@@ -453,6 +471,9 @@ module cve2_decoder #(
         rf_ren_a_o      = 1'b1;
         rf_ren_b_o      = 1'b1;
         rf_we           = 1'b1;
+
+        rel_instr_class_dec_o = REL_SC_ALU;
+        
         if ({instr[26], instr[13:12]} == {1'b1, 2'b01}) begin
           illegal_insn = (RV32B != RV32BNone) ? 1'b0 : 1'b1; // cmix / cmov / fsl / fsr
         end else begin
@@ -624,6 +645,8 @@ module cve2_decoder #(
           rf_wdata_sel_o   = $bits(rf_wdata_sel_o)'({RF_WD_CSR});
           rf_we            = 1'b1;
 
+          rel_instr_class_dec_o = REL_CSR;
+
           if (~instr[14]) begin
             rf_ren_a_o         = 1'b1;
           end
@@ -649,12 +672,21 @@ module cve2_decoder #(
       illegal_insn = 1'b1;
     end
 
+    if (alu_multicycle_o) begin
+      rel_instr_class_dec_o = REL_MC_ALU;
+    end
+
+    if (mult_en_o || div_en_o) begin
+      rel_instr_class_dec_o = REL_MULTDIV;
+    end
+
     // make sure illegal instructions detected in the decoder do not propagate from decoder
     // into register file, LSU, EX, WB, CSRs, PC
     // NOTE: instructions can also be detected to be illegal inside the CSRs (upon accesses with
     // insufficient privileges), or when accessing non-available registers in RV32E,
     // these cases are not handled here
     if (illegal_insn) begin
+      rel_instr_class_dec_o = REL_NONE;
       rf_we           = 1'b0;
       data_req_o      = 1'b0;
       data_we_o       = 1'b0;

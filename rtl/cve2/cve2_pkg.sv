@@ -267,6 +267,27 @@ package cve2_pkg;
     RF_WD_COPROC // Only used when XInterface = 1
   } rf_wd_sel_e;
 
+  typedef enum logic [3:0] {
+    REL_NONE,
+    REL_SC_ALU,
+    REL_BRANCH,
+    REL_JUMP,
+    REL_LOAD,
+    REL_STORE,
+    REL_MULTDIV,
+    REL_MC_ALU,
+    REL_CSR,
+    REL_SYSTEM
+  } rel_instr_class_e;
+
+  typedef enum logic { PRIMARY, SECONDARY } rel_phase_e;
+
+  typedef struct packed {
+    rel_instr_class_e instr_class;
+    logic [31:0]      cmp_val0;
+    logic [31:0]      cmp_val1;
+  } rel_result_t;
+
   //////////////
   // IF stage //
   //////////////
