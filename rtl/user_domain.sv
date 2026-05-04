@@ -20,6 +20,8 @@ module user_domain import user_pkg::*; import croc_pkg::*; #(
   output mgr_obi_req_t user_mgr_obi_req_o, // User Mgr (req_o), Croc Sbr (rsp_i)
   input  mgr_obi_rsp_t user_mgr_obi_rsp_i,
 
+  output logic                 wdt_rst_req_o,
+
   input  logic [      GpioCount-1:0] gpio_in_sync_i, // synchronized GPIO inputs
   output logic [NumExternalIrqs-1:0] interrupts_o    // interrupts to core
 );
@@ -55,11 +57,17 @@ module user_domain import user_pkg::*; import croc_pkg::*; #(
   sbr_obi_req_t user_rom_obi_req;
   sbr_obi_rsp_t user_rom_obi_rsp;
 
+  // WDT Subordinate Bus
+  sbr_obi_req_t user_wdt_obi_req;
+  sbr_obi_rsp_t user_wdt_obi_rsp;
+
   // Fanout into more readable signals
   assign user_error_obi_req               = all_user_sbr_obi_req[UserError];
   assign all_user_sbr_obi_rsp[UserError]  = user_error_obi_rsp;
   assign user_rom_obi_req = all_user_sbr_obi_req[UserRom];
   assign all_user_sbr_obi_rsp[UserRom] = user_rom_obi_rsp;
+  assign user_wdt_obi_req = all_user_sbr_obi_req[UserWdt];
+  assign all_user_sbr_obi_rsp[UserWdt] = user_wdt_obi_rsp;
 
 
   //-----------------------------------------------------------------------------------------------
@@ -131,6 +139,18 @@ module user_domain import user_pkg::*; import croc_pkg::*; #(
     .testmode_i ( testmode_i         ),
     .obi_req_i  ( user_error_obi_req ),
     .obi_rsp_o  ( user_error_obi_rsp )
+  );
+
+  // Watchdog Subordinate
+  wdt #(
+    .obi_req_t(sbr_obi_req_t),
+    .obi_rsp_t(sbr_obi_rsp_t)
+  ) i_wdt (
+    .clk_i,
+    .rst_ni,
+    .obi_req_i     ( user_wdt_obi_req ),
+    .obi_rsp_o     ( user_wdt_obi_rsp ),
+    .wdt_rst_req_o ( wdt_rst_req_o    )
   );
 
 endmodule

@@ -46,6 +46,8 @@ sbr_obi_rsp_t user_sbr_obi_rsp;
 mgr_obi_req_t user_mgr_obi_req;
 mgr_obi_rsp_t user_mgr_obi_rsp;
 
+logic user_rst_req;
+
 localparam int unsigned NumExternalIrqs = 4;
 logic [NumExternalIrqs-1:0] interrupts;
 logic [      GpioCount-1:0] gpio_in_sync;
@@ -80,6 +82,8 @@ croc_domain #(
   .user_mgr_obi_req_i  ( user_mgr_obi_req ),
   .user_mgr_obi_rsp_o  ( user_mgr_obi_rsp ),
 
+  .user_rst_req_i      ( user_rst_req ),
+
   .interrupts_i ( interrupts ),
   .core_busy_o  ( status_o   )
 );
@@ -98,6 +102,8 @@ user_domain #(
 
   .user_mgr_obi_req_o ( user_mgr_obi_req ),
   .user_mgr_obi_rsp_i ( user_mgr_obi_rsp ),
+
+  .wdt_rst_req_o      ( user_rst_req ),
 
   .gpio_in_sync_i ( gpio_in_sync ),
   .interrupts_o   ( interrupts   )

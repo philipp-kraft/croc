@@ -39,6 +39,8 @@ module croc_domain import croc_pkg::*; #(
   input  mgr_obi_req_t user_mgr_obi_req_i,
   output mgr_obi_rsp_t user_mgr_obi_rsp_o,
 
+  input  logic user_rst_req_i,
+
   input  logic [NumExternalIrqs-1:0] interrupts_i,
   output logic core_busy_o
 );
@@ -589,7 +591,7 @@ module croc_domain import croc_pkg::*; #(
     .clk_i          ( clk_i        ),
     .rst_ni         ( rst_ni       ),
     .testmode_i     ( testmode_i   ),
-    .core_rst_req_i ( core_rst_req | core_rel_error ),
+    .core_rst_req_i ( core_rst_req | core_rel_error | user_rst_req_i ),
     .core_rst_no    ( core_rst_n   )
   );
 
