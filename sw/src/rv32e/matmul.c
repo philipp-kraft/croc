@@ -57,7 +57,7 @@ int run_matmul_benchmark(void) {
 }
 
 int main() {
-    core_mode_switch(CORE_ISA_RV32E, CORE_RELIABILITY_ON);
+    core_mode_switch(CORE_ISA_RV32E, CORE_RELIABILITY_OFF);
 
     int error = run_matmul_benchmark();
 
