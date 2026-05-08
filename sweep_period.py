@@ -10,7 +10,32 @@ REPORT_PATH = "openroad/reports/05_core.final.rpt"
 RESULTS_DIR = "results/sweep"
 FLOW_CMD = "./croc.sh all"
 
-PERIODS = [10.0, 5.8, 5.5]
+PERIODS = [
+    100.00,  # 10 MHz
+    40.00,   # 25 MHz
+    20.00,   # 50 MHz
+    13.33,   # 75 MHz
+
+    # 100 MHz to 150 MHz in 10 MHz steps
+    10.00,   # 100 MHz
+    9.09,    # 110 MHz
+    8.33,    # 120 MHz
+    7.69,    # 130 MHz
+    7.14,    # 140 MHz
+    6.67,    # 150 MHz
+
+    # 150 MHz to 200 MHz in 5 MHz steps
+    6.45,    # 155 MHz
+    6.25,    # 160 MHz
+    6.06,    # 165 MHz
+    5.88,    # 170 MHz
+    5.71,    # 175 MHz
+    5.56,    # 180 MHz
+    5.41,    # 185 MHz
+    5.26,    # 190 MHz
+    5.13,    # 195 MHz
+    5.00,    # 200 MHz
+]
 
 def modify_sdc(sdc_path, period):
     with open(sdc_path, "r") as f:
