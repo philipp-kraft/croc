@@ -31,13 +31,13 @@ yosys read_slang --top $top_design -f $sv_flist \
 # yosys-slang uniquifies all modules with the naming scheme:
 # <module-name>$<instance-name> -> match for t:<module-name>$$
 yosys setattr -set keep_hierarchy 1 "t:core_wrap$*"
-yosys setattr -set keep_hierarchy 1 "t:cve2_core$*"
-yosys setattr -set keep_hierarchy 1 "t:cve2_if_stage$*"
-yosys setattr -set keep_hierarchy 1 "t:cve2_id_stage$*"
-yosys setattr -set keep_hierarchy 1 "t:cve2_ex_block$*"
-yosys setattr -set keep_hierarchy 1 "t:cve2_load_store_unit$*"
-yosys setattr -set keep_hierarchy 1 "n:*register_file_i*"
-yosys setattr -set keep_hierarchy 1 "t:cve2_cs_registers$*"
+# yosys setattr -set keep_hierarchy 1 "t:cve2_core$*"
+# yosys setattr -set keep_hierarchy 1 "t:cve2_if_stage$*"
+# yosys setattr -set keep_hierarchy 1 "t:cve2_id_stage$*"
+# yosys setattr -set keep_hierarchy 1 "t:cve2_ex_block$*"
+# yosys setattr -set keep_hierarchy 1 "t:cve2_load_store_unit$*"
+# yosys setattr -set keep_hierarchy 1 "n:*register_file_i*"
+# yosys setattr -set keep_hierarchy 1 "t:cve2_cs_registers$*"
 
 
 # blackbox modules (applies the *blackbox* attribute)
