@@ -21,12 +21,12 @@ module user_rom #(
   logic req_d, req_q;
   logic [ObiCfg.IdWidth-1:0] id_d, id_q;
   logic we_d, we_q;
-  logic [1:0] word_addr_d, word_addr_q;
+  logic [3:0] word_addr_d, word_addr_q;
 
   assign req_d         = obi_req_i.req;
   assign id_d          = obi_req_i.a.aid;
   assign we_d          = obi_req_i.a.we;
-  assign word_addr_d   = obi_req_i.a.addr[3:2];
+  assign word_addr_d   = obi_req_i.a.addr[5:2];
 
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
@@ -52,10 +52,15 @@ module user_rom #(
     if (req_q) begin
       if (~we_q) begin
         case (word_addr_q) // little endian
-          2'b00:  rsp_data = 32'h20485445;  // "ETH "
-          2'b01:  rsp_data = 32'h6972755A;  // "Zuri"
-          2'b10:  rsp_data = 32'h00006863;  // "ch\0"
-          2'b11:  rsp_data = 32'h00000000;
+          4'd0: rsp_data = 32'h6C696850;  // "Phil"
+          4'd1: rsp_data = 32'h20707069;  // "ipp "
+          4'd2: rsp_data = 32'h6661724B;  // "Kraf"
+          4'd3: rsp_data = 32'h6E612074;  // "t an"
+          4'd4: rsp_data = 32'h654A2064;  // "d Je"
+          4'd5: rsp_data = 32'h796D6572;  // "remy"
+          4'd6: rsp_data = 32'h72654720;  // " Ger"
+          4'd7: rsp_data = 32'h72657473;  // "ster"
+          4'd8: rsp_data = 32'h00000000;  // "\0"
           default: rsp_data = 32'h00000000;
         endcase
       end else begin
