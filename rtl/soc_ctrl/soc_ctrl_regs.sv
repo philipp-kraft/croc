@@ -57,14 +57,16 @@ module soc_ctrl_regs #(
     5'b0                               // [4:0]   reserved
   };
 
-  // read-write registers
-  logic [31:0]        boot_addr_d,      boot_addr_q;
-  logic                fetch_en_d,       fetch_en_q;
-  logic [31:0]      core_status_d,    core_status_q;
-  logic               boot_mode_d,      boot_mode_q;
-  logic                sram_dly_d,       sram_dly_q;
-  core_mode_t         core_mode_d,      core_mode_q;
-  logic [3:0]    core_rst_cause_d, core_rst_cause_q;
+  // Register state
+  logic [31:0]        boot_addr_d,       boot_addr_q;
+  logic                fetch_en_d,        fetch_en_q;
+  logic [31:0]      core_status_d,     core_status_q;
+  logic               boot_mode_d,       boot_mode_q;
+  logic                sram_dly_d,        sram_dly_q;
+  core_mode_t         core_mode_d,       core_mode_q;
+  logic [3:0]    core_rst_cause_d,  core_rst_cause_q;
+  logic          core_rel_error_d,  core_rel_error_q;
+  logic [31:0]  rel_error_count_d, rel_error_count_q;
 
   `FF(boot_addr_q, boot_addr_d,              BootAddrDefault, clk_i, rst_ni)
   `FF(fetch_en_q, fetch_en_d,                           1'b1, clk_i, rst_ni)
@@ -73,6 +75,8 @@ module soc_ctrl_regs #(
   `FF(sram_dly_q, sram_dly_d,                             '0, clk_i, rst_ni)
   `FF(core_mode_q, core_mode_d, '{reliable:1'b0, rv32e:1'b0}, clk_i, rst_ni)
   `FF(core_rst_cause_q, core_rst_cause_d,            4'b0001, clk_i, rst_ni)
+  `FF(core_rel_error_q, core_rel_error_d,                  '0, clk_i, rst_ni)
+  `FF(rel_error_count_q, rel_error_count_d,                '0, clk_i, rst_ni)
 
   // OBI handling, A-phase fields needed in the R-phase
   logic                               req_q;
@@ -100,14 +104,16 @@ module soc_ctrl_regs #(
 
   // Address phase: update writable registers
   always_comb begin : write_fsm
-    boot_addr_d      = boot_addr_q;
-    fetch_en_d       = fetch_en_q;
-    core_status_d    = core_status_q;
-    boot_mode_d      = boot_mode_q;
-    sram_dly_d       = sram_dly_q;
-    core_mode_d      = core_mode_q;
-    core_rst_req_o   = 1'b0;
-    core_rst_cause_d = core_rst_cause_q;
+    boot_addr_d       = boot_addr_q;
+    fetch_en_d        = fetch_en_q;
+    core_status_d     = core_status_q;
+    boot_mode_d       = boot_mode_q;
+    sram_dly_d        = sram_dly_q;
+    core_mode_d       = core_mode_q;
+    core_rst_req_o    = 1'b0;
+    core_rst_cause_d  = core_rst_cause_q;
+    core_rel_error_d  = core_rel_error_i;
+    rel_error_count_d = rel_error_count_q;
 
     if (obi_req_i.req && obi_req_i.a.we) begin
       unique case ({obi_req_i.a.addr[IntAddrWidth-1:2], 2'b00})
@@ -132,8 +138,12 @@ module soc_ctrl_regs #(
     end
 
     // update core_rst_cause register
-    if (core_rst_req_o)   core_rst_cause_d[1] = 1'b1; // sw reset
-    if (core_rel_error_i) core_rst_cause_d[2] = 1'b1; // rel mismatch reset
+    if (core_rst_req_o)   core_rst_cause_d[1]  = 1'b1; // sw reset
+    if (core_rel_error_i) core_rst_cause_d[2]  = 1'b1; // rel mismatch reset
+
+    if (core_rel_error_i && !core_rel_error_q) begin
+      rel_error_count_d = rel_error_count_q + 32'd1;
+    end
   end
 
   // Response phase: send back read data or acknowledge write
@@ -154,6 +164,7 @@ module soc_ctrl_regs #(
           SOC_CTRL_INFO_OFFSET:           obi_rsp_o.r.rdata = HwInfoWord;
           SOC_CTRL_CORE_MODE_OFFSET:      obi_rsp_o.r.rdata = {30'b0, core_mode_q};
           SOC_CTRL_CORE_RST_CAUSE_OFFSET: obi_rsp_o.r.rdata = {28'b0, core_rst_cause_q};
+          SOC_CTRL_REL_ERROR_COUNT_OFFSET: obi_rsp_o.r.rdata = rel_error_count_q;
           default: begin
             obi_rsp_o.r.rdata = 32'hBADCAB1E;
             obi_rsp_o.r.err   = 1'b1;
