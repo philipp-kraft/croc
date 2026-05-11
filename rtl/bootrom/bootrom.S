@@ -38,8 +38,8 @@
 _start:
   lui     t0, 0x03000        # t0 = SOC_CTRL base (0x0300_0000)
   lw      t0, 0x20(t0)       # t0 = core reset cause (CORE_RST_CAUSE register)
-  andi    t1, t0, 0x06       # check for bit 1 or bit 2
-  bnez    t1, register_init  # skip WFI when sw reset or rel mismatch
+  andi    t1, t0, 0x0E       # check bits 1, 2, or 3
+  bnez    t1, register_init  # skip WFI when sw reset, rel mismatch, or WDT
 
   csrwi   mie, 8       # Enable M-mode software interrupt
   wfi                  # Sleep until interrupt

@@ -8,10 +8,10 @@
 #define WDT_TIMEOUT_VAL (*(volatile uint32_t*)(WDT_BASE + 0x08))
 
 // Define SoC Control registers
-#define SOC_CTRL_BASE   0x1A000000
+#define SOC_CTRL_BASE   0x03000000
 #define CORE_RST_CAUSE  (*(volatile uint32_t*)(SOC_CTRL_BASE + 0x20))
 
-#define UART_BASE       0x1A002000
+#define UART_BASE       0x03002000
 #define UART_TX         (*(volatile uint32_t*)(UART_BASE + 0x00))
 
 void print_char(char c) {
@@ -20,9 +20,10 @@ void print_char(char c) {
 
 int main() {
     // if cpu boots, check why
-    if (CORE_RST_CAUSE & 0x04) {
-        print_char('R'); // Rebooted successfully from wtd
-        while(1);        // Stop here
+    if (CORE_RST_CAUSE & 0x08) {
+        print_char('R'); // Rebooted successfully from wdt
+        print_char('\n'); // flush UART monitor line buffer
+        return 0;
     }
 
     print_char('S'); // S = Start

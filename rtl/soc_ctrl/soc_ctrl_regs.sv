@@ -23,7 +23,8 @@ module soc_ctrl_regs #(
   output logic             sram_dly_o,
   output logic             core_rst_req_o,
   output core_mode_t       core_mode_pending_o,
-  input logic              core_rel_error_i
+  input logic              core_rel_error_i,
+  input logic              wdt_rst_req_i
 );
   import soc_ctrl_regs_pkg::*;
 
@@ -134,6 +135,7 @@ module soc_ctrl_regs #(
     // update core_rst_cause register
     if (core_rst_req_o)   core_rst_cause_d[1] = 1'b1; // sw reset
     if (core_rel_error_i) core_rst_cause_d[2] = 1'b1; // rel mismatch reset
+    if (wdt_rst_req_i)    core_rst_cause_d[3] = 1'b1; // watchdog reset
   end
 
   // Response phase: send back read data or acknowledge write

@@ -59,7 +59,11 @@ module wdt #(
     // 2. SOFTWARE OBI WRITE LOGIC (Overrides counter if CPU wrote this cycle)
     if (obi_req_i.req && obi_req_i.a.we) begin
       unique case ({obi_req_i.a.addr[IntAddrWidth-1:2], 2'b00})
-        WDT_EN_OFFSET:          en_d          = obi_req_i.a.wdata[0];
+        WDT_EN_OFFSET: begin
+          en_d = obi_req_i.a.wdata[0];
+          // Load counter on enable rising edge so WDT doesn't fire immediately
+          if (obi_req_i.a.wdata[0] && !en_q) cnt_d = timeout_val_q;
+        end
         WDT_TIMEOUT_VAL_OFFSET: timeout_val_d = obi_req_i.a.wdata;
         WDT_FEED_OFFSET: begin
           if (obi_req_i.a.wdata == 32'hFEEDC0DE) begin
