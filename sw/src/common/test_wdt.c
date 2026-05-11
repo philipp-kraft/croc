@@ -1,50 +1,97 @@
-#include <stdint.h>
-#include "config.h"
+// Copyright 2026 ETH Zurich and University of Bologna.
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+//
+// Jeremy Gerster <jgerster@ethz.ch>
 
-// Define Watchdog memory-mapped registers
-#define WDT_BASE        0x20001000
-#define WDT_EN          (*(volatile uint32_t*)(WDT_BASE + 0x00))
-#define WDT_FEED        (*(volatile uint32_t*)(WDT_BASE + 0x04))
-#define WDT_TIMEOUT_VAL (*(volatile uint32_t*)(WDT_BASE + 0x08))
+#include "util.h"
+#include "uart.h"
+#include "print.h"
+#include "core.h"
+#include "wdt.h"
 
-// Define SoC Control registers
-#define SOC_CTRL_BASE   0x03000000
-#define CORE_RST_CAUSE  (*(volatile uint32_t*)(SOC_CTRL_BASE + 0x20))
+#define WDT_EXPECT_MAGIC 0xC0DEBEEFu
+static volatile uint32_t expect_wdt_reboot;
 
-#define UART_BASE       0x03002000
-#define UART_TX         (*(volatile uint32_t*)(UART_BASE + 0x00))
-
-void print_char(char c) {
-    UART_TX = c;
+static int test_register_rw(void) {
+    wdt_set_timeout(0xDEADBEEF);
+    CHECK_ASSERT(11, WDT_REG(WDT_TIMEOUT_VAL_REG_OFFSET) == 0xDEADBEEF);
+    wdt_disable();
+    CHECK_ASSERT(12, (WDT_REG(WDT_EN_REG_OFFSET) & 1u) == 0u);
+    return 0;
 }
 
-int main() {
-    // if cpu boots, check why
-    if (CORE_RST_CAUSE & 0x08) {
-        print_char('R'); // Rebooted successfully from wdt
-        print_char('\n'); // flush UART monitor line buffer
+static int test_feed(void) {
+    wdt_set_timeout(50000);
+    wdt_enable();
+    for (int i = 0; i < 10; i++) {
+        for (volatile int d = 0; d < 1000; d++);
+        wdt_feed();
+    }
+    wdt_disable();
+    return 0;
+}
+
+static int test_disable(void) {
+    wdt_set_timeout(2000);
+    wdt_enable();
+    wdt_disable();
+    for (volatile int d = 0; d < 5000; d++);
+    return 0;
+}
+
+static int test_count_decrements(void) {
+    wdt_set_timeout(100000);
+    wdt_enable();
+    uint32_t a = wdt_get_count();
+    for (volatile int d = 0; d < 200; d++);
+    uint32_t b = wdt_get_count();
+    wdt_disable();
+    CHECK_ASSERT(41, b < a);
+    return 0;
+}
+
+static int test_bad_feed(void) {
+    wdt_set_timeout(100000);
+    wdt_enable();
+    for (volatile int d = 0; d < 200; d++);
+    uint32_t before = wdt_get_count();
+    WDT_REG(WDT_FEED_REG_OFFSET) = 0xDEADBEEF;
+    uint32_t after = wdt_get_count();
+    wdt_disable();
+    // slack for cycles between the two reads
+    CHECK_ASSERT(51, after <= before + 50);
+    return 0;
+}
+
+int main(void) {
+    uart_init();
+
+    core_rst_cause_t cause = core_get_rst_cause();
+    core_clear_rst_cause(CORE_RST_CAUSE_SOC | CORE_RST_CAUSE_WDT);
+
+    if (cause & CORE_RST_CAUSE_WDT) {
+        wdt_disable();
+        printf("rebooted via WDT (cause=0x%x marker=0x%x)\n", cause, expect_wdt_reboot);
+        uart_write_flush();
+        CHECK_ASSERT(91, expect_wdt_reboot == WDT_EXPECT_MAGIC);
         return 0;
     }
 
-    print_char('S'); // S = Start
+    expect_wdt_reboot = 0;
+    printf("WDT test start (cause=0x%x)\n", cause);
 
-    // 2. Configure the Watchdog
-    WDT_TIMEOUT_VAL = 50000; // 50,000 clock cycles timeout
-    WDT_EN = 1;              // Turn it on
+    CHECK_CALL(test_register_rw());
+    CHECK_CALL(test_feed());
+    CHECK_CALL(test_disable());
+    CHECK_CALL(test_count_decrements());
+    CHECK_CALL(test_bad_feed());
 
-    print_char('A'); // A = Alive
+    expect_wdt_reboot = WDT_EXPECT_MAGIC;
+    printf("Arming WDT, expecting reset...\n");
+    uart_write_flush();
 
-    // 3. reset counter
-    for (int i = 0; i < 3; i++) {
-        for (volatile int delay = 0; delay < 10000; delay++); 
-        WDT_FEED = 0xFEEDC0DE; // Reset the counter
-        print_char('F'); 
-    }
-
-    // test get stuck
-    print_char('S'); // S = Stuck
-    while(1) {
-    }
-
-    return 0;
+    wdt_set_timeout(50000);
+    wdt_enable();
+    while (1);
 }

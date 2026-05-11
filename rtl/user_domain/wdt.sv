@@ -25,7 +25,6 @@ module wdt #(
   logic        en_d,          en_q;
   logic [31:0] cnt_d,         cnt_q;
 
-  // OBI tracking
   logic req_q, we_q;
   logic [$bits(obi_req_i.a.aid)-1:0] id_q;
   logic [IntAddrWidth-1:2]           addr_q;
@@ -35,7 +34,6 @@ module wdt #(
   `FF(id_q,   obi_req_i.a.aid,                    '0, clk_i, rst_ni)
   `FF(addr_q, obi_req_i.a.addr[IntAddrWidth-1:2], '0, clk_i, rst_ni)
 
-  // Registers
   `FF(timeout_val_q, timeout_val_d, '0, clk_i, rst_ni)
   `FF(en_q,          en_d,          '0, clk_i, rst_ni)
   `FF(cnt_q,         cnt_d,         '0, clk_i, rst_ni)
@@ -46,17 +44,15 @@ module wdt #(
     cnt_d         = cnt_q;
     wdt_rst_req_o = 1'b0;
 
-    // 1. HARDWARE COUNTER LOGIC
     if (en_q) begin
       if (cnt_q == 0) begin
-        wdt_rst_req_o = 1'b1;  // Pulse the reset wire
-        cnt_d = timeout_val_q; // Auto-reload counter
+        wdt_rst_req_o = 1'b1;
+        cnt_d = timeout_val_q;
       end else begin
-        cnt_d = cnt_q - 1;     // Count down
+        cnt_d = cnt_q - 1;
       end
     end
 
-    // 2. SOFTWARE OBI WRITE LOGIC (Overrides counter if CPU wrote this cycle)
     if (obi_req_i.req && obi_req_i.a.we) begin
       unique case ({obi_req_i.a.addr[IntAddrWidth-1:2], 2'b00})
         WDT_EN_OFFSET: begin
@@ -66,16 +62,13 @@ module wdt #(
         end
         WDT_TIMEOUT_VAL_OFFSET: timeout_val_d = obi_req_i.a.wdata;
         WDT_FEED_OFFSET: begin
-          if (obi_req_i.a.wdata == 32'hFEEDC0DE) begin
-            cnt_d = timeout_val_q; // Reset counter
-          end
+          if (obi_req_i.a.wdata == 32'hFEEDC0DE) cnt_d = timeout_val_q;
         end
         default: ;
       endcase
     end
   end
 
-  //obi read response
   always_comb begin : obi_response
     obi_rsp_o        = '0;
     obi_rsp_o.gnt    = 1'b1;
@@ -87,15 +80,15 @@ module wdt #(
         unique case ({addr_q, 2'b00})
           WDT_EN_OFFSET:          obi_rsp_o.r.rdata = {31'b0, en_q};
           WDT_TIMEOUT_VAL_OFFSET: obi_rsp_o.r.rdata = timeout_val_q;
-          WDT_FEED_OFFSET:        obi_rsp_o.r.rdata = cnt_q; // Reads return current countdown
+          WDT_FEED_OFFSET:        obi_rsp_o.r.rdata = cnt_q;
           default: begin
             obi_rsp_o.r.rdata = 32'hBADCAB1E;
             obi_rsp_o.r.err   = 1'b1;
           end
         endcase
       end else begin
-        unique case ({addr_q, 2'b00}) // Writes are valid on all 3
-          WDT_EN_OFFSET, WDT_TIMEOUT_VAL_OFFSET, WDT_FEED_OFFSET: ; 
+        unique case ({addr_q, 2'b00})
+          WDT_EN_OFFSET, WDT_TIMEOUT_VAL_OFFSET, WDT_FEED_OFFSET: ;
           default: obi_rsp_o.r.err = 1'b1;
         endcase
       end
