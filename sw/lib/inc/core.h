@@ -18,7 +18,7 @@
 #define CORE_RST_CAUSE_SOC          (1 << 0)
 #define CORE_RST_CAUSE_SW           (1 << 1)
 #define CORE_RST_CAUSE_REL_MISMATCH (1 << 2)
-#define CORE_RST_CAUSE_RESERVED     (1 << 3)
+#define CORE_RST_CAUSE_WDT          (1 << 3)
 
 typedef enum { CORE_ISA_RV32I = 0, CORE_ISA_RV32E = 1, CORE_ISA_INVALID = 3 } core_isa_t;
 typedef enum { CORE_RELIABILITY_OFF = 0, CORE_RELIABILITY_ON = 1, CORE_RELIABILITY_INVALID = 3 } core_reliability_t;

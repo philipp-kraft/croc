@@ -22,7 +22,7 @@ case "$1" in
     cd sw
     make all
     cd ../verilator
-    ./run_verilator.sh --build --run ../sw/bin/$PROGRAM
+    ./run_verilator.sh --flist --build --run ../sw/bin/$PROGRAM
     ;;
 
   wave)
