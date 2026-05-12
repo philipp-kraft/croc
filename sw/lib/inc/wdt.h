@@ -10,14 +10,14 @@
 #include "config.h"
 
 // Register offsets
-#define WDT_EN_REG_OFFSET           0x00
-#define WDT_FEED_REG_OFFSET         0x04
-#define WDT_TIMEOUT_VAL_REG_OFFSET  0x08
+#define WDT_EN_REG_OFFSET          0x00
+#define WDT_FEED_REG_OFFSET        0x04
+#define WDT_TIMEOUT_VAL_REG_OFFSET 0x08
 
 // Magic value the FEED register accepts to reload counter
-#define WDT_FEED_MAGIC              0xFEEDC0DE
+#define WDT_FEED_MAGIC             0xFEEDC0DE
 
-#define WDT_REG(off) (*(volatile uint32_t *)(USER_WDT_BASE_ADDR + (off)))
+#define WDT_REG(off)               (*(volatile uint32_t *)(USER_WDT_BASE_ADDR + (off)))
 
 static inline void wdt_set_timeout(uint32_t cycles) {
     WDT_REG(WDT_TIMEOUT_VAL_REG_OFFSET) = cycles;

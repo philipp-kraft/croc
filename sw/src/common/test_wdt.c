@@ -25,7 +25,8 @@ static int test_feed(void) {
     wdt_set_timeout(50000);
     wdt_enable();
     for (int i = 0; i < 10; i++) {
-        for (volatile int d = 0; d < 1000; d++);
+        for (volatile int d = 0; d < 1000; d++)
+            ;
         wdt_feed();
     }
     wdt_disable();
@@ -36,7 +37,8 @@ static int test_disable(void) {
     wdt_set_timeout(2000);
     wdt_enable();
     wdt_disable();
-    for (volatile int d = 0; d < 5000; d++);
+    for (volatile int d = 0; d < 5000; d++)
+        ;
     return 0;
 }
 
@@ -44,7 +46,8 @@ static int test_count_decrements(void) {
     wdt_set_timeout(100000);
     wdt_enable();
     uint32_t a = wdt_get_count();
-    for (volatile int d = 0; d < 200; d++);
+    for (volatile int d = 0; d < 200; d++)
+        ;
     uint32_t b = wdt_get_count();
     wdt_disable();
     CHECK_ASSERT(41, b < a);
@@ -54,10 +57,11 @@ static int test_count_decrements(void) {
 static int test_bad_feed(void) {
     wdt_set_timeout(100000);
     wdt_enable();
-    for (volatile int d = 0; d < 200; d++);
-    uint32_t before = wdt_get_count();
+    for (volatile int d = 0; d < 200; d++)
+        ;
+    uint32_t before              = wdt_get_count();
     WDT_REG(WDT_FEED_REG_OFFSET) = 0xDEADBEEF;
-    uint32_t after = wdt_get_count();
+    uint32_t after               = wdt_get_count();
     wdt_disable();
     // slack for cycles between the two reads
     CHECK_ASSERT(51, after <= before + 50);
@@ -93,5 +97,6 @@ int main(void) {
 
     wdt_set_timeout(50000);
     wdt_enable();
-    while (1);
+    while (1)
+        ;
 }
