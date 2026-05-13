@@ -7,7 +7,7 @@
 
 package soc_ctrl_regs_pkg;
 
-  // Internal address width. 6 bits covers offsets 0x00–0x3F (8 word-aligned registers).
+  // Internal address width. 6 bits covers offsets 0x00-0x3F (word-aligned registers).
   localparam int unsigned IntAddrWidth = 6;
 
   // Register offsets
@@ -21,5 +21,6 @@ package soc_ctrl_regs_pkg;
   parameter logic [IntAddrWidth-1:0] SOC_CTRL_CORE_RST_REQ_OFFSET     = 6'h18;
   parameter logic [IntAddrWidth-1:0] SOC_CTRL_CORE_MODE_OFFSET        = 6'h1c;
   parameter logic [IntAddrWidth-1:0] SOC_CTRL_CORE_RST_CAUSE_OFFSET   = 6'h20;
+  parameter logic [IntAddrWidth-1:0] SOC_CTRL_REL_ERROR_COUNT_OFFSET  = 6'h24;
 
 endpackage

@@ -14,6 +14,7 @@
 #define CORE_RST_REG                (*(volatile uint32_t *)(SOCCTRL_BASE_ADDR + 0x18))
 #define CORE_MODE_REG               (*(volatile uint32_t *)(SOCCTRL_BASE_ADDR + 0x1C))
 #define CORE_RST_CAUSE_REG          (*(volatile uint32_t *)(SOCCTRL_BASE_ADDR + 0x20))
+#define CORE_REL_ERROR_COUNT_REG    (*(volatile uint32_t *)(SOCCTRL_BASE_ADDR + 0x24))
 
 #define CORE_RST_CAUSE_SOC          (1 << 0)
 #define CORE_RST_CAUSE_SW           (1 << 1)
@@ -32,3 +33,5 @@ bool core_mode_switch(core_isa_t isa, core_reliability_t reliability);
 
 core_rst_cause_t core_get_rst_cause(void);
 void core_clear_rst_cause(core_rst_cause_t cause);
+
+uint32_t get_rel_error_count(void);
