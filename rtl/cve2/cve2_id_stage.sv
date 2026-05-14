@@ -157,6 +157,7 @@ module cve2_id_stage #(
   input  logic [31:0]               rf_rdata_b_i,
   output logic                      rf_ren_a_o,
   output logic                      rf_ren_b_o,
+  input  logic                      rf_read_error_i,
 
   // Register file write (via writeback)
   output logic [4:0]                rf_waddr_id_o,
@@ -372,7 +373,9 @@ module cve2_id_stage #(
       rel_primary_result_d = '0;
       rel_error_d          = 1'b0;
     end else if (!rel_error_q) begin
-      if (rel_do_capture) begin
+      if (rf_read_error_i) begin
+        rel_error_d = 1'b1;
+      end else if (rel_do_capture) begin
         rel_phase_d          = SECONDARY;
         rel_primary_result_d = rel_current_result;
       end else if (rel_do_compare) begin
@@ -391,7 +394,7 @@ module cve2_id_stage #(
     rel_commit = 1'b1;
 
     if (reliable_mode_i) begin
-      if (rel_error_q) begin
+      if (rel_error_q || rf_read_error_i) begin
         rel_commit = 1'b0;
       end else if (rel_do_capture) begin
         rel_commit = 1'b0;
@@ -412,7 +415,7 @@ module cve2_id_stage #(
   assign rf_rbank_remap_a_o = (rel_phase_q == SECONDARY);
   assign rf_rbank_remap_b_o = (rel_phase_q == SECONDARY);
   
-  assign rel_error_o = rel_error_q;
+  assign rel_error_o = rel_error_q | rf_read_error_i;
 
   ///////////////
   // ID-EX FSM //

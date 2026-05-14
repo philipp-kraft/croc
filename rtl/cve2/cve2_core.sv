@@ -184,6 +184,7 @@ module cve2_core import cve2_pkg::*; #(
   logic [31:0] rf_rdata_b;
   logic        rf_ren_a;
   logic        rf_ren_b;
+  logic        rf_read_error;
   logic [4:0]  rf_waddr_wb;
   logic [31:0] rf_wdata_wb;
   // Writeback register write data that can be used on the forwarding path (doesn't factor in memory
@@ -517,6 +518,7 @@ module cve2_core import cve2_pkg::*; #(
     .rf_rdata_b_i      (rf_rdata_b),
     .rf_ren_a_o        (rf_ren_a),
     .rf_ren_b_o        (rf_ren_b),
+    .rf_read_error_i   (rf_read_error),
     .rf_waddr_id_o     (rf_waddr_id),
     .rf_wdata_id_o     (rf_wdata_id),
     .rf_we_id_o        (rf_we_id),
@@ -708,15 +710,18 @@ module cve2_core import cve2_pkg::*; #(
 
     .raddr_a_i(rf_raddr_a),
     .rbank_remap_a_i(rf_rbank_remap_a),
+    .ren_a_i  (rf_ren_a),
     .rdata_a_o(rf_rdata_a),
     .raddr_b_i(rf_raddr_b),
     .rbank_remap_b_i(rf_rbank_remap_b),
+    .ren_b_i  (rf_ren_b),
     .rdata_b_o(rf_rdata_b),
     .waddr_a_i(rf_waddr_wb),
     .wdata_a_i(rf_wdata_wb),
     .we_a_i   (rf_we_wb),
 
-    .reliable_mode_i (reliable_mode_i)
+    .reliable_mode_i (reliable_mode_i),
+    .read_error_o    (rf_read_error)
   );
 
 
