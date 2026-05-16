@@ -129,7 +129,7 @@ module cve2_core import cve2_pkg::*; #(
   output logic                         core_busy_o,
 
   output logic                         rel_error_o,
-  output logic [1:0]                   rel_error_src_o
+  output logic [2:0]                   rel_error_src_o
 );
 
   localparam int unsigned PMP_NUM_CHAN      = 3;
@@ -147,6 +147,7 @@ module cve2_core import cve2_pkg::*; #(
   logic        instr_fetch_err;                // Bus error on instr fetch
   logic        instr_fetch_err_plus2;          // Instruction error is misaligned
   logic        instr_fetch_rdata_error;        // Fetch FIFO rdata shadow mismatch
+  logic        csr_error;                      // CSR shadow mismatch
   logic        illegal_c_insn_id;              // Illegal compressed instruction sent to ID stage
   logic [31:0] pc_if;                          // Program counter in IF stage
   logic [31:0] pc_id;                          // Program counter in ID stage
@@ -541,7 +542,7 @@ module cve2_core import cve2_pkg::*; #(
     .instr_id_done_o  (instr_id_done)
   );
 
-  assign rel_error_src_o = {instr_fetch_rdata_error, id_rel_error};
+  assign rel_error_src_o = {csr_error, instr_fetch_rdata_error, id_rel_error};
   assign rel_error_o     = |rel_error_src_o;
 
   // for RVFI only
@@ -755,6 +756,7 @@ module cve2_core import cve2_pkg::*; #(
     .rst_ni(rst_ni),
 
     .rv32e_mode_i(rv32e_mode_i),
+    .reliable_mode_i(reliable_mode_i),
 
     // Hart ID from outside
     .hart_id_i      (hart_id_i),
@@ -812,6 +814,7 @@ module cve2_core import cve2_pkg::*; #(
     .csr_mcause_i      (exc_cause),
     .csr_mtval_i       (csr_mtval),
     .illegal_csr_insn_o(illegal_csr_insn_id),
+    .csr_error_o       (csr_error),
 
     // performance counter related signals
     .instr_ret_i                (perf_instr_ret_wb),
