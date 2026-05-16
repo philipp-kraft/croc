@@ -16,6 +16,7 @@ module cve2_prefetch_buffer #(
   input  logic        rst_ni,
 
   input  logic        req_i,
+  input  logic        reliable_mode_i,
 
   input  logic        branch_i,
   input  logic [31:0] addr_i,
@@ -27,6 +28,7 @@ module cve2_prefetch_buffer #(
   output logic [31:0] addr_o,
   output logic        err_o,
   output logic        err_plus2_o,
+  output logic        rdata_error_o,
 
   // goes to instruction memory / instruction cache
   output logic        instr_req_o,
@@ -95,6 +97,7 @@ module cve2_prefetch_buffer #(
       .rst_ni                ( rst_ni            ),
 
       .clear_i               ( fifo_clear        ),
+      .reliable_mode_i       ( reliable_mode_i   ),
       .busy_o                ( fifo_busy         ),
 
       .in_valid_i            ( fifo_valid        ),
@@ -107,7 +110,8 @@ module cve2_prefetch_buffer #(
       .out_rdata_o           ( rdata_o           ),
       .out_addr_o            ( addr_o            ),
       .out_err_o             ( err_o             ),
-      .out_err_plus2_o       ( err_plus2_o       )
+      .out_err_plus2_o       ( err_plus2_o       ),
+      .out_rdata_error_o     ( rdata_error_o     )
   );
 
   //////////////

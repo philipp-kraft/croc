@@ -128,7 +128,8 @@ module cve2_core import cve2_pkg::*; #(
   input  logic                         reliable_mode_i,
   output logic                         core_busy_o,
 
-  output logic                         rel_error_o
+  output logic                         rel_error_o,
+  output logic [1:0]                   rel_error_src_o
 );
 
   localparam int unsigned PMP_NUM_CHAN      = 3;
@@ -145,6 +146,7 @@ module cve2_core import cve2_pkg::*; #(
   logic        instr_perf_count_id;
   logic        instr_fetch_err;                // Bus error on instr fetch
   logic        instr_fetch_err_plus2;          // Instruction error is misaligned
+  logic        instr_fetch_rdata_error;        // Fetch FIFO rdata shadow mismatch
   logic        illegal_c_insn_id;              // Illegal compressed instruction sent to ID stage
   logic [31:0] pc_if;                          // Program counter in IF stage
   logic [31:0] pc_id;                          // Program counter in ID stage
@@ -299,6 +301,7 @@ module cve2_core import cve2_pkg::*; #(
 
   // for RVFI
   logic        illegal_insn_id, unused_illegal_insn_id; // ID stage sees an illegal instruction
+  logic        id_rel_error;
 
   //////////////////////
   // Clock management //
@@ -318,6 +321,7 @@ module cve2_core import cve2_pkg::*; #(
 
     .boot_addr_i(boot_addr_i),
     .req_i      (instr_req_gated),  // instruction request control
+    .reliable_mode_i(reliable_mode_i),
 
     // instruction cache interface
     .instr_req_o    (instr_req_o),
@@ -336,6 +340,7 @@ module cve2_core import cve2_pkg::*; #(
     .instr_is_compressed_id_o(instr_is_compressed_id),
     .instr_fetch_err_o       (instr_fetch_err),
     .instr_fetch_err_plus2_o (instr_fetch_err_plus2),
+    .instr_fetch_rdata_error_o(instr_fetch_rdata_error),
     .illegal_c_insn_id_o     (illegal_c_insn_id),
     .pc_if_o                 (pc_if),
     .pc_id_o                 (pc_id),
@@ -391,7 +396,7 @@ module cve2_core import cve2_pkg::*; #(
     .fetch_enable_i(fetch_enable_i),
     .rv32e_mode_i  (rv32e_mode_i),
     .reliable_mode_i(reliable_mode_i),
-    .rel_error_o    (rel_error_o),
+    .rel_error_o    (id_rel_error),
     .ctrl_busy_o   (ctrl_busy),
     .illegal_insn_o(illegal_insn_id),
 
@@ -535,6 +540,9 @@ module cve2_core import cve2_pkg::*; #(
     .perf_div_wait_o  (perf_div_wait),
     .instr_id_done_o  (instr_id_done)
   );
+
+  assign rel_error_src_o = {instr_fetch_rdata_error, id_rel_error};
+  assign rel_error_o     = |rel_error_src_o;
 
   // for RVFI only
   assign unused_illegal_insn_id = illegal_insn_id;

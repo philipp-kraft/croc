@@ -53,6 +53,7 @@ module croc_domain import croc_pkg::*; #(
   logic core_rst_req;
   logic core_rst_n;
   logic core_rel_error;
+  logic [1:0] core_rel_error_src;
 
   core_mode_t core_mode_pending;
   core_mode_t core_mode_active;
@@ -260,7 +261,8 @@ module croc_domain import croc_pkg::*; #(
     .reliable_mode_i ( core_mode_active.reliable ),
 
     .core_busy_o     ( core_busy_o ),
-    .rel_error_o     ( core_rel_error )
+    .rel_error_o     ( core_rel_error ),
+    .rel_error_src_o ( core_rel_error_src )
   );
 
   // -----------------
@@ -580,7 +582,8 @@ module croc_domain import croc_pkg::*; #(
     .sram_dly_o           ( sram_impl         ),
     .core_rst_req_o       ( core_rst_req      ),
     .core_mode_pending_o  ( core_mode_pending ),
-    .core_rel_error_i     ( core_rel_error    )
+    .core_rel_error_i     ( core_rel_error     ),
+    .core_rel_error_src_i ( core_rel_error_src )
   );
 
   core_rst_ctrl #(

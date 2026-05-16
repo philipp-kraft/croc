@@ -11,6 +11,8 @@
 #define SOC_CTRL_CORESTATUS_REG_OFFSET  0x08
 #define SOC_CTRL_BOOTMODE_REG_OFFSET    0x0C
 #define SOC_CTRL_SRAM_DLY_REG_OFFSET    0x10
+#define SOC_CTRL_REL_ERROR_COUNT_OFFSET 0x24
+#define SOC_CTRL_REL_ERROR_CAUSE_OFFSET 0x28
 
 // Read-only hardware info register (see soc_ctrl_regs.sv for full field layout)
 // Groups: SoC identity/features [31:24], core identity/features [23:16], SRAM config [15:0]
