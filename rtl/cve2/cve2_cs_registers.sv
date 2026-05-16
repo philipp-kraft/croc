@@ -30,6 +30,7 @@ module cve2_cs_registers #(
   input  logic                 rst_ni,
 
   input  logic                 rv32e_mode_i,
+  input  logic                 reliable_mode_i,
 
   // Hart ID
   input  logic [31:0]          hart_id_i,
@@ -92,6 +93,8 @@ module cve2_cs_registers #(
   output logic                 illegal_csr_insn_o,     // access to non-existent CSR,
                                                         // with wrong priviledge level, or
                                                         // missing write permissions
+  output logic                 csr_error_o,
+
   // Performance Counters
   input  logic                 instr_ret_i,                 // instr retired in ID/EX stage
   input  logic                 instr_ret_compressed_i,      // compressed instr retired
@@ -221,6 +224,7 @@ import cve2_pkg::*;
   logic        unused_mhpmcounter_incr_1;
 
   logic [63:0] minstret_raw;
+  logic        mstatus_error;
 
   // Debug / trigger registers
   logic [31:0] tselect_rdata;
@@ -733,6 +737,8 @@ import cve2_pkg::*;
   // only write CSRs during one clock cycle
   assign csr_we_int  = csr_wr & csr_op_en_i & ~illegal_csr_insn_o;
 
+  assign csr_error_o = reliable_mode_i & mstatus_error;
+
   assign csr_rdata_o = csr_rdata_int;
 
   // directly output some registers
@@ -763,6 +769,7 @@ import cve2_pkg::*;
                                           tw:   1'b0};
   cve2_csr #(
     .Width     ($bits(status_t)),
+    .ShadowCopy(1'b1),
     .ResetValue({MSTATUS_RST_VAL})
   ) u_mstatus_csr (
     .clk_i     (clk_i),
@@ -770,7 +777,7 @@ import cve2_pkg::*;
     .wr_data_i ({mstatus_d}),
     .wr_en_i   (mstatus_en),
     .rd_data_o (mstatus_q),
-    .rd_error_o()
+    .rd_error_o(mstatus_error)
   );
 
   // MEPC
@@ -850,6 +857,7 @@ import cve2_pkg::*;
   // MTVEC
   cve2_csr #(
     .Width     (32),
+    .ShadowCopy(1'b0),
     .ResetValue(32'd1)
   ) u_mtvec_csr (
     .clk_i     (clk_i),

@@ -19,6 +19,7 @@ module cve2_if_stage import cve2_pkg::*; (
 
   input  logic [31:0]                  boot_addr_i,              // also used for mtvec
   input  logic                         req_i,                    // instruction request control
+  input  logic                         reliable_mode_i,
 
   // instruction cache interface
   output logic                        instr_req_o,
@@ -41,6 +42,7 @@ module cve2_if_stage import cve2_pkg::*; (
                                                                 // is a compressed instr
   output logic                        instr_fetch_err_o,        // bus error on fetch
   output logic                        instr_fetch_err_plus2_o,  // bus error misaligned
+  output logic                        instr_fetch_rdata_error_o,
   output logic                        illegal_c_insn_id_o,      // compressed decoder thinks this
                                                                 // is an invalid instr
   output logic [31:0]                 pc_if_o,
@@ -92,10 +94,15 @@ module cve2_if_stage import cve2_pkg::*; (
   logic       [31:0] fetch_addr;
   logic              fetch_err;
   logic              fetch_err_plus2;
+  logic              fetch_rdata_error;
 
   logic [31:0]       instr_decompressed;
   logic              illegal_c_insn;
   logic              instr_is_compressed;
+  logic [31:0]       instr_rdata_id_shadow_q;
+  logic              instr_rdata_id_error;
+  logic [31:0]       pc_id_shadow_q;
+  logic              pc_id_error;
 
   logic              if_instr_pmp_err;
   logic              if_instr_err;
@@ -156,6 +163,7 @@ module cve2_if_stage import cve2_pkg::*; (
       .rst_ni              ( rst_ni                     ),
 
       .req_i               ( req_i                      ),
+      .reliable_mode_i     ( reliable_mode_i            ),
 
       .branch_i            ( branch_req                 ),
       .addr_i              ( {fetch_addr_n[31:1], 1'b0} ),
@@ -166,6 +174,7 @@ module cve2_if_stage import cve2_pkg::*; (
       .addr_o              ( fetch_addr                 ),
       .err_o               ( fetch_err                  ),
       .err_plus2_o         ( fetch_err_plus2            ),
+      .rdata_error_o       ( fetch_rdata_error           ),
 
       .instr_req_o         ( instr_req_o                ),
       .instr_addr_o        ( instr_addr_o               ),
@@ -200,6 +209,7 @@ module cve2_if_stage import cve2_pkg::*; (
 
   assign pc_if_o     = fetch_addr;
   assign if_busy_o   = prefetch_busy;
+  assign instr_fetch_rdata_error_o = fetch_rdata_error | instr_rdata_id_error | pc_id_error;
 
   // PMP errors
   // An error can come from the instruction address, or the next instruction address for unaligned,
@@ -256,6 +266,7 @@ module cve2_if_stage import cve2_pkg::*; (
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
       instr_rdata_id_o         <= '0;
+      instr_rdata_id_shadow_q  <= '1;
       instr_rdata_alu_id_o     <= '0;
       instr_fetch_err_o        <= '0;
       instr_fetch_err_plus2_o  <= '0;
@@ -263,8 +274,10 @@ module cve2_if_stage import cve2_pkg::*; (
       instr_is_compressed_id_o <= '0;
       illegal_c_insn_id_o      <= '0;
       pc_id_o                  <= '0;
+      pc_id_shadow_q           <= '1;
     end else if (if_id_pipe_reg_we) begin
       instr_rdata_id_o         <= instr_decompressed;
+      instr_rdata_id_shadow_q  <= ~instr_decompressed;
       // To reduce fan-out and help timing from the instr_rdata_id flops they are replicated.
       instr_rdata_alu_id_o     <= instr_decompressed;
       instr_fetch_err_o        <= if_instr_err;
@@ -273,8 +286,14 @@ module cve2_if_stage import cve2_pkg::*; (
       instr_is_compressed_id_o <= instr_is_compressed;
       illegal_c_insn_id_o      <= illegal_c_insn;
       pc_id_o                  <= pc_if_o;
+      pc_id_shadow_q           <= ~pc_if_o;
     end
   end
+
+  assign instr_rdata_id_error = reliable_mode_i & instr_valid_id_q &
+                                (instr_rdata_id_o != ~instr_rdata_id_shadow_q);
+  assign pc_id_error          = reliable_mode_i & instr_valid_id_q &
+                                (pc_id_o != ~pc_id_shadow_q);
 
   assign fetch_ready = id_in_ready_i;
 

@@ -21,6 +21,7 @@ module cve2_fetch_fifo #(
 
   // control signals
   input  logic                clear_i,   // clears the contents of the FIFO
+  input  logic                reliable_mode_i,
   output logic [NUM_REQS-1:0] busy_o,
 
   // input port
@@ -35,15 +36,18 @@ module cve2_fetch_fifo #(
   output logic [31:0]         out_addr_o,
   output logic [31:0]         out_rdata_o,
   output logic                out_err_o,
-  output logic                out_err_plus2_o
+  output logic                out_err_plus2_o,
+  output logic                out_rdata_error_o
 );
 
   localparam int unsigned DEPTH = NUM_REQS+1;
 
   // index 0 is used for output
   logic [DEPTH-1:0] [31:0]  rdata_d,   rdata_q;
+  logic [DEPTH-1:0] [31:0]  rdata_shadow_d, rdata_shadow_q;
   logic [DEPTH-1:0]         err_d,     err_q;
   logic [DEPTH-1:0]         valid_d,   valid_q;
+  logic [DEPTH-1:0]         rdata_error;
   logic [DEPTH-1:0]         lowest_free_entry;
   logic [DEPTH-1:0]         valid_pushed, valid_popped;
   logic [DEPTH-1:0]         entry_en;
@@ -58,7 +62,9 @@ module cve2_fetch_fifo #(
   logic                     addr_incr_two;
   logic [31:1]              instr_addr_next;
   logic [31:1]              instr_addr_d, instr_addr_q;
+  logic [31:1]              instr_addr_shadow_q;
   logic                     instr_addr_en;
+  logic                     instr_addr_error;
   logic                     unused_addr_in;
 
   /////////////////
@@ -151,11 +157,15 @@ module cve2_fetch_fifo #(
 
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
-      instr_addr_q <= '0;
+      instr_addr_q        <= '0;
+      instr_addr_shadow_q <= '1;
     end else if (instr_addr_en) begin
-      instr_addr_q <= instr_addr_d;
+      instr_addr_q        <= instr_addr_d;
+      instr_addr_shadow_q <= ~instr_addr_d;
     end
   end
+
+  assign instr_addr_error = (instr_addr_q != ~instr_addr_shadow_q);
 
   // Output PC of current instruction
   assign out_addr_o      = {instr_addr_q, 1'b0};
@@ -171,6 +181,7 @@ module cve2_fetch_fifo #(
   // made on the bus. The prefetch buffer only needs to know about the upper entries which overlap
   // with NUM_REQS.
   assign busy_o = valid_q[DEPTH-1:DEPTH-NUM_REQS];
+  assign out_rdata_error_o = reliable_mode_i & (instr_addr_error | |(valid_q & rdata_error));
 
   /////////////////////
   // FIFO management //
@@ -201,8 +212,9 @@ module cve2_fetch_fifo #(
                          (in_valid_i & lowest_free_entry[i] & ~pop_fifo);
 
     // take the next entry or the incoming data
-    assign rdata_d[i]  = valid_q[i+1] ? rdata_q[i+1] : in_rdata_i;
-    assign err_d  [i]  = valid_q[i+1] ? err_q  [i+1] : in_err_i;
+    assign rdata_d       [i] = valid_q[i+1] ? rdata_q       [i+1] : in_rdata_i;
+    assign rdata_shadow_d[i] = valid_q[i+1] ? rdata_shadow_q[i+1] : ~in_rdata_i;
+    assign err_d         [i] = valid_q[i+1] ? err_q         [i+1] : in_err_i;
   end
   // The top entry is similar but with simpler muxing
   assign lowest_free_entry[DEPTH-1] = ~valid_q[DEPTH-1] & valid_q[DEPTH-2];
@@ -210,8 +222,9 @@ module cve2_fetch_fifo #(
   assign valid_popped     [DEPTH-1] = pop_fifo ? 1'b0 : valid_pushed[DEPTH-1];
   assign valid_d [DEPTH-1]          = valid_popped[DEPTH-1] & ~clear_i;
   assign entry_en[DEPTH-1]          = in_valid_i & lowest_free_entry[DEPTH-1];
-  assign rdata_d [DEPTH-1]          = in_rdata_i;
-  assign err_d   [DEPTH-1]          = in_err_i;
+  assign rdata_d       [DEPTH-1]    = in_rdata_i;
+  assign rdata_shadow_d[DEPTH-1]    = ~in_rdata_i;
+  assign err_d         [DEPTH-1]    = in_err_i;
 
   ////////////////////
   // FIFO registers //
@@ -228,13 +241,17 @@ module cve2_fetch_fifo #(
   for (genvar i = 0; i < DEPTH; i++) begin : g_fifo_regs
       always_ff @(posedge clk_i or negedge rst_ni) begin
         if (!rst_ni) begin
-          rdata_q[i] <= '0;
-          err_q[i]   <= '0;
+          rdata_q[i]        <= '0;
+          rdata_shadow_q[i] <= '1;
+          err_q[i]          <= '0;
         end else if (entry_en[i]) begin
-          rdata_q[i] <= rdata_d[i];
-          err_q[i]   <= err_d[i];
+          rdata_q[i]        <= rdata_d[i];
+          rdata_shadow_q[i] <= rdata_shadow_d[i];
+          err_q[i]          <= err_d[i];
         end
       end
+
+      assign rdata_error[i] = (rdata_q[i] != ~rdata_shadow_q[i]);
   end
 
   ////////////////

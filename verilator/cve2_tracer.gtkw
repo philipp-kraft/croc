@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v4.0.0-prealpha (a6aae77) (w)1999-2022 BSI
-[*] Sat Apr 18 12:15:35 2026
+[*] Sat May 16 12:59:30 2026
 [*]
 [dumpfile] "/fosic/designs/croc/verilator/croc.fst"
-[dumpfile_mtime] "Sat Apr 18 12:07:09 2026"
-[dumpfile_size] 1270438
+[dumpfile_mtime] "Sat May 16 12:58:16 2026"
+[dumpfile_size] 832761
 [savefile] "/fosic/designs/croc/verilator/cve2_tracer.gtkw"
-[timestart] 1639046100
-[size] 3428 1367
-[pos] -1 -1
-*-17.255560 1639548300 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+[timestart] 848010000
+[size] 1800 1108
+[pos] -234 -1301
+*-21.687361 -1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 [markername] AA
 [markername] BB
 [markername] CC
@@ -47,7 +47,7 @@
 [sst_width] 456
 [signals_width] 380
 [sst_expanded] 1
-[sst_vpaned_height] 895
+[sst_vpaned_height] 829
 @28
 tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.clk_i
 tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.rst_ni
@@ -67,7 +67,6 @@ tb_croc_soc.i_croc_soc.i_croc.i_core_mode_ctrl.core_mode_active_o.rv32e
 @200
 -
 @28
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.u_cve2_core.id_stage_i.single_cycle_ex_dec
 tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.u_cve2_core.id_stage_i.lsu_req_dec
 tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.u_cve2_core.id_stage_i.multdiv_en_dec
 tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.u_cve2_core.id_stage_i.branch_in_dec
@@ -80,8 +79,8 @@ tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.u_cve2_core.id_stage_i.illegal_
 @100000028
 tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.u_cve2_core.id_stage_i.rel_instr_class_dec[3:0]
 @28
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.u_cve2_core.id_stage_i.rel_instr_supported
-tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.u_cve2_core.id_stage_i.rel_error_q
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.rel_error_o
+tb_croc_soc.i_croc_soc.i_croc.i_core_wrap.i_core.rel_error_src_o[1:0]
 @200
 -
 -LS UNIT

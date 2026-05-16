@@ -16,6 +16,7 @@ module cve2_prefetch_buffer #(
   input  logic        rst_ni,
 
   input  logic        req_i,
+  input  logic        reliable_mode_i,
 
   input  logic        branch_i,
   input  logic [31:0] addr_i,
@@ -27,6 +28,7 @@ module cve2_prefetch_buffer #(
   output logic [31:0] addr_o,
   output logic        err_o,
   output logic        err_plus2_o,
+  output logic        rdata_error_o,
 
   // goes to instruction memory / instruction cache
   output logic        instr_req_o,
@@ -52,7 +54,9 @@ module cve2_prefetch_buffer #(
   logic [31:0]         stored_addr_d, stored_addr_q;
   logic                stored_addr_en;
   logic [31:0]         fetch_addr_d, fetch_addr_q;
+  logic [31:0]         fetch_addr_shadow_q;
   logic                fetch_addr_en;
+  logic                fetch_addr_error;
   logic [31:0]         instr_addr, instr_addr_w_aligned;
 
   logic                fifo_valid;
@@ -62,6 +66,7 @@ module cve2_prefetch_buffer #(
   logic [NUM_REQS-1:0] fifo_busy;
 
   logic                valid_raw;
+  logic                fifo_rdata_error;
 
   ////////////////////////////
   // Prefetch buffer status //
@@ -95,6 +100,7 @@ module cve2_prefetch_buffer #(
       .rst_ni                ( rst_ni            ),
 
       .clear_i               ( fifo_clear        ),
+      .reliable_mode_i       ( reliable_mode_i   ),
       .busy_o                ( fifo_busy         ),
 
       .in_valid_i            ( fifo_valid        ),
@@ -107,8 +113,11 @@ module cve2_prefetch_buffer #(
       .out_rdata_o           ( rdata_o           ),
       .out_addr_o            ( addr_o            ),
       .out_err_o             ( err_o             ),
-      .out_err_plus2_o       ( err_plus2_o       )
+      .out_err_plus2_o       ( err_plus2_o       ),
+      .out_rdata_error_o     ( fifo_rdata_error  )
   );
+
+  assign rdata_error_o = fifo_rdata_error | fetch_addr_error;
 
   //////////////
   // Requests //
@@ -168,11 +177,15 @@ module cve2_prefetch_buffer #(
 
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
-      fetch_addr_q <= '0;
+      fetch_addr_q        <= '0;
+      fetch_addr_shadow_q <= '1;
     end else if (fetch_addr_en) begin
-      fetch_addr_q <= fetch_addr_d;
+      fetch_addr_q        <= fetch_addr_d;
+      fetch_addr_shadow_q <= ~fetch_addr_d;
     end
   end
+
+  assign fetch_addr_error = reliable_mode_i & (fetch_addr_q != ~fetch_addr_shadow_q);
 
   // Address mux
   assign instr_addr = valid_req_q         ? stored_addr_q :
