@@ -225,8 +225,6 @@ import cve2_pkg::*;
 
   logic [63:0] minstret_raw;
   logic        mstatus_error;
-  logic        mepc_error;
-  logic        mtvec_error;
 
   // Debug / trigger registers
   logic [31:0] tselect_rdata;
@@ -739,7 +737,7 @@ import cve2_pkg::*;
   // only write CSRs during one clock cycle
   assign csr_we_int  = csr_wr & csr_op_en_i & ~illegal_csr_insn_o;
 
-  assign csr_error_o = reliable_mode_i & (mstatus_error | mepc_error | mtvec_error);
+  assign csr_error_o = reliable_mode_i & mstatus_error;
 
   assign csr_rdata_o = csr_rdata_int;
 
@@ -785,7 +783,7 @@ import cve2_pkg::*;
   // MEPC
   cve2_csr #(
     .Width     (32),
-    .ShadowCopy(1'b1),
+    .ShadowCopy(1'b0),
     .ResetValue('0)
   ) u_mepc_csr (
     .clk_i     (clk_i),
@@ -793,7 +791,7 @@ import cve2_pkg::*;
     .wr_data_i (mepc_d),
     .wr_en_i   (mepc_en),
     .rd_data_o (mepc_q),
-    .rd_error_o(mepc_error)
+    .rd_error_o()
   );
 
   // MIE
@@ -859,7 +857,7 @@ import cve2_pkg::*;
   // MTVEC
   cve2_csr #(
     .Width     (32),
-    .ShadowCopy(1'b1),
+    .ShadowCopy(1'b0),
     .ResetValue(32'd1)
   ) u_mtvec_csr (
     .clk_i     (clk_i),
@@ -867,7 +865,7 @@ import cve2_pkg::*;
     .wr_data_i (mtvec_d),
     .wr_en_i   (mtvec_en),
     .rd_data_o (mtvec_q),
-    .rd_error_o(mtvec_error)
+    .rd_error_o()
   );
 
   // DCSR
