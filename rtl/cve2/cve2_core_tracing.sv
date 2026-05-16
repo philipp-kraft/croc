@@ -88,7 +88,7 @@ module cve2_core_tracing import cve2_pkg::*; #(
   output logic                         core_busy_o,
 
   output logic                         rel_error_o,
-  output logic [1:0]                   rel_error_src_o
+  output logic [2:0]                   rel_error_src_o
 );
 
   // cve2_tracer relies on the signals from the RISC-V Formal Interface

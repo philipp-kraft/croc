@@ -24,7 +24,7 @@ module soc_ctrl_regs #(
   output logic             core_rst_req_o,
   output core_mode_t       core_mode_pending_o,
   input logic              core_rel_error_i,
-  input logic [1:0]        core_rel_error_src_i
+  input logic [2:0]        core_rel_error_src_i
 );
   import soc_ctrl_regs_pkg::*;
 
@@ -68,7 +68,7 @@ module soc_ctrl_regs #(
   logic [3:0]    core_rst_cause_d,  core_rst_cause_q;
   logic          core_rel_error_d,  core_rel_error_q;
   logic [31:0]  rel_error_count_d, rel_error_count_q;
-  logic [1:0]   rel_error_cause_d, rel_error_cause_q;
+  logic [2:0]   rel_error_cause_d, rel_error_cause_q;
 
   `FF(boot_addr_q, boot_addr_d,              BootAddrDefault, clk_i, rst_ni)
   `FF(fetch_en_q, fetch_en_d,                           1'b1, clk_i, rst_ni)
@@ -170,7 +170,7 @@ module soc_ctrl_regs #(
           SOC_CTRL_CORE_MODE_OFFSET:      obi_rsp_o.r.rdata = {30'b0, core_mode_q};
           SOC_CTRL_CORE_RST_CAUSE_OFFSET: obi_rsp_o.r.rdata = {28'b0, core_rst_cause_q};
           SOC_CTRL_REL_ERROR_COUNT_OFFSET: obi_rsp_o.r.rdata = rel_error_count_q;
-          SOC_CTRL_REL_ERROR_CAUSE_OFFSET: obi_rsp_o.r.rdata = {30'b0, rel_error_cause_q};
+          SOC_CTRL_REL_ERROR_CAUSE_OFFSET: obi_rsp_o.r.rdata = {29'b0, rel_error_cause_q};
           default: begin
             obi_rsp_o.r.rdata = 32'hBADCAB1E;
             obi_rsp_o.r.err   = 1'b1;

@@ -53,7 +53,7 @@ module croc_domain import croc_pkg::*; #(
   logic core_rst_req;
   logic core_rst_n;
   logic core_rel_error;
-  logic [1:0] core_rel_error_src;
+  logic [2:0] core_rel_error_src;
 
   core_mode_t core_mode_pending;
   core_mode_t core_mode_active;

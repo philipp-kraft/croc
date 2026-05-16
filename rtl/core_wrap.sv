@@ -82,7 +82,7 @@ module core_wrap import croc_pkg::*; #() (
   output logic        core_busy_o,
 
   output logic        rel_error_o,
-  output logic [1:0]  rel_error_src_o
+  output logic [2:0]  rel_error_src_o
 );
 
   // CVE2: debug halt/exception vectors are provided as runtime inputs.
