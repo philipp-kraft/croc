@@ -62,3 +62,7 @@ void core_clear_rst_cause(core_rst_cause_t cause) {
 uint32_t get_rel_error_count(void) {
     return CORE_REL_ERROR_COUNT_REG;
 }
+
+uint32_t get_rel_error_cause(void) {
+    return CORE_REL_ERROR_CAUSE_REG;
+}
