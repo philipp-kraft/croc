@@ -101,6 +101,8 @@ module cve2_if_stage import cve2_pkg::*; (
   logic              instr_is_compressed;
   logic [31:0]       instr_rdata_id_shadow_q;
   logic              instr_rdata_id_error;
+  logic [31:0]       pc_id_shadow_q;
+  logic              pc_id_error;
 
   logic              if_instr_pmp_err;
   logic              if_instr_err;
@@ -207,7 +209,7 @@ module cve2_if_stage import cve2_pkg::*; (
 
   assign pc_if_o     = fetch_addr;
   assign if_busy_o   = prefetch_busy;
-  assign instr_fetch_rdata_error_o = fetch_rdata_error | instr_rdata_id_error;
+  assign instr_fetch_rdata_error_o = fetch_rdata_error | instr_rdata_id_error | pc_id_error;
 
   // PMP errors
   // An error can come from the instruction address, or the next instruction address for unaligned,
@@ -272,6 +274,7 @@ module cve2_if_stage import cve2_pkg::*; (
       instr_is_compressed_id_o <= '0;
       illegal_c_insn_id_o      <= '0;
       pc_id_o                  <= '0;
+      pc_id_shadow_q           <= '1;
     end else if (if_id_pipe_reg_we) begin
       instr_rdata_id_o         <= instr_decompressed;
       instr_rdata_id_shadow_q  <= ~instr_decompressed;
@@ -283,11 +286,14 @@ module cve2_if_stage import cve2_pkg::*; (
       instr_is_compressed_id_o <= instr_is_compressed;
       illegal_c_insn_id_o      <= illegal_c_insn;
       pc_id_o                  <= pc_if_o;
+      pc_id_shadow_q           <= ~pc_if_o;
     end
   end
 
   assign instr_rdata_id_error = reliable_mode_i & instr_valid_id_q &
                                 (instr_rdata_id_o != ~instr_rdata_id_shadow_q);
+  assign pc_id_error          = reliable_mode_i & instr_valid_id_q &
+                                (pc_id_o != ~pc_id_shadow_q);
 
   assign fetch_ready = id_in_ready_i;
 
