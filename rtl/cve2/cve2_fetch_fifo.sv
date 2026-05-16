@@ -62,7 +62,9 @@ module cve2_fetch_fifo #(
   logic                     addr_incr_two;
   logic [31:1]              instr_addr_next;
   logic [31:1]              instr_addr_d, instr_addr_q;
+  logic [31:1]              instr_addr_shadow_q;
   logic                     instr_addr_en;
+  logic                     instr_addr_error;
   logic                     unused_addr_in;
 
   /////////////////
@@ -155,11 +157,15 @@ module cve2_fetch_fifo #(
 
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
-      instr_addr_q <= '0;
+      instr_addr_q        <= '0;
+      instr_addr_shadow_q <= '1;
     end else if (instr_addr_en) begin
-      instr_addr_q <= instr_addr_d;
+      instr_addr_q        <= instr_addr_d;
+      instr_addr_shadow_q <= ~instr_addr_d;
     end
   end
+
+  assign instr_addr_error = (instr_addr_q != ~instr_addr_shadow_q);
 
   // Output PC of current instruction
   assign out_addr_o      = {instr_addr_q, 1'b0};
@@ -175,7 +181,7 @@ module cve2_fetch_fifo #(
   // made on the bus. The prefetch buffer only needs to know about the upper entries which overlap
   // with NUM_REQS.
   assign busy_o = valid_q[DEPTH-1:DEPTH-NUM_REQS];
-  assign out_rdata_error_o = reliable_mode_i & |(valid_q & rdata_error);
+  assign out_rdata_error_o = reliable_mode_i & (instr_addr_error | |(valid_q & rdata_error));
 
   /////////////////////
   // FIFO management //

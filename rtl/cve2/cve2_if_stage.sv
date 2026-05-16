@@ -99,6 +99,8 @@ module cve2_if_stage import cve2_pkg::*; (
   logic [31:0]       instr_decompressed;
   logic              illegal_c_insn;
   logic              instr_is_compressed;
+  logic [31:0]       instr_rdata_id_shadow_q;
+  logic              instr_rdata_id_error;
 
   logic              if_instr_pmp_err;
   logic              if_instr_err;
@@ -205,7 +207,7 @@ module cve2_if_stage import cve2_pkg::*; (
 
   assign pc_if_o     = fetch_addr;
   assign if_busy_o   = prefetch_busy;
-  assign instr_fetch_rdata_error_o = fetch_rdata_error;
+  assign instr_fetch_rdata_error_o = fetch_rdata_error | instr_rdata_id_error;
 
   // PMP errors
   // An error can come from the instruction address, or the next instruction address for unaligned,
@@ -262,6 +264,7 @@ module cve2_if_stage import cve2_pkg::*; (
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
       instr_rdata_id_o         <= '0;
+      instr_rdata_id_shadow_q  <= '1;
       instr_rdata_alu_id_o     <= '0;
       instr_fetch_err_o        <= '0;
       instr_fetch_err_plus2_o  <= '0;
@@ -271,6 +274,7 @@ module cve2_if_stage import cve2_pkg::*; (
       pc_id_o                  <= '0;
     end else if (if_id_pipe_reg_we) begin
       instr_rdata_id_o         <= instr_decompressed;
+      instr_rdata_id_shadow_q  <= ~instr_decompressed;
       // To reduce fan-out and help timing from the instr_rdata_id flops they are replicated.
       instr_rdata_alu_id_o     <= instr_decompressed;
       instr_fetch_err_o        <= if_instr_err;
@@ -281,6 +285,9 @@ module cve2_if_stage import cve2_pkg::*; (
       pc_id_o                  <= pc_if_o;
     end
   end
+
+  assign instr_rdata_id_error = reliable_mode_i & instr_valid_id_q &
+                                (instr_rdata_id_o != ~instr_rdata_id_shadow_q);
 
   assign fetch_ready = id_in_ready_i;
 
