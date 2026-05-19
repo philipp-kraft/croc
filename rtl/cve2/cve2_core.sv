@@ -168,6 +168,8 @@ module cve2_core import cve2_pkg::*; #(
   // LSU signals
   logic        lsu_addr_incr_req;
   logic [31:0] lsu_addr_last;
+  logic [31:0] lsu_addr;
+  logic        lsu_addr_match_err;
 
   // Jump and branch target and decision (EX->IF)
   logic [31:0] branch_target_ex;
@@ -468,6 +470,7 @@ module cve2_core import cve2_pkg::*; #(
     .lsu_type_o    (lsu_type),  // to load store unit
     .lsu_sign_ext_o(lsu_sign_ext),  // to load store unit
     .lsu_wdata_o   (lsu_wdata),  // to load store unit
+    .lsu_addr_o    (lsu_addr),  // to load store unit
 
     .lsu_addr_incr_req_i(lsu_addr_incr_req),
     .lsu_addr_last_i    (lsu_addr_last),
@@ -542,7 +545,7 @@ module cve2_core import cve2_pkg::*; #(
     .instr_id_done_o  (instr_id_done)
   );
 
-  assign rel_error_src_o = {csr_error, instr_fetch_rdata_error, id_rel_error};
+  assign rel_error_src_o = {csr_error, instr_fetch_rdata_error, id_rel_error | lsu_addr_match_err};
   assign rel_error_o     = |rel_error_src_o;
 
   // for RVFI only
@@ -596,6 +599,7 @@ module cve2_core import cve2_pkg::*; #(
   cve2_load_store_unit load_store_unit_i (
     .clk_i (clk_i),
     .rst_ni(rst_ni),
+    .reliable_mode_i(reliable_mode_i),
 
     // data interface
     .data_req_o    (data_req_out),
@@ -621,6 +625,7 @@ module cve2_core import cve2_pkg::*; #(
     .lsu_req_i        (lsu_req),
 
     .adder_result_ex_i(alu_adder_result_ex),
+    .lsu_addr_i       (lsu_addr),
 
     .addr_incr_req_o(lsu_addr_incr_req),
     .addr_last_o    (lsu_addr_last),
@@ -633,6 +638,7 @@ module cve2_core import cve2_pkg::*; #(
     .store_err_o(lsu_store_err),
 
     .busy_o(lsu_busy),
+    .addr_match_err_o(lsu_addr_match_err),
 
     .perf_load_o (perf_load),
     .perf_store_o(perf_store)
@@ -1302,7 +1308,7 @@ module cve2_core import cve2_pkg::*; #(
   // Memory adddress/write data available first cycle of ld/st instruction from register read
   always_comb begin
     if (instr_first_cycle_id) begin
-      rvfi_mem_addr_d  = alu_adder_result_ex;
+      rvfi_mem_addr_d  = lsu_addr;
       rvfi_mem_wdata_d = lsu_wdata;
     end else begin
       rvfi_mem_addr_d  = rvfi_mem_addr_q;

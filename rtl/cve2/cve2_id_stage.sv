@@ -100,6 +100,7 @@ module cve2_id_stage #(
   output logic [1:0]                lsu_type_o,
   output logic                      lsu_sign_ext_o,
   output logic [31:0]               lsu_wdata_o,
+  output logic [31:0]               lsu_addr_o,
 
   input  logic                      lsu_addr_incr_req_i,
   input  logic [31:0]               lsu_addr_last_i,
@@ -792,6 +793,11 @@ module cve2_id_stage #(
   assign lsu_type_o              = lsu_type;
   assign lsu_sign_ext_o          = lsu_sign_ext;
   assign lsu_wdata_o             = rf_rdata_b_fwd;
+  assign lsu_addr_o              = (reliable_mode_i &&
+                                    (rel_phase_q == SECONDARY) &&
+                                    ((rel_primary_result_q.instr_class == REL_LOAD) ||
+                                     (rel_primary_result_q.instr_class == REL_STORE))) ?
+                                   rel_primary_result_q.cmp_val0 : result_ex_i;
   // csr_op_en_o is set when CSR access should actually happen.
   // csv_access_o is set when CSR access instruction is present and is used to compute whether a CSR
   // access is illegal. A combinational loop would be created if csr_op_en_o was used along (as

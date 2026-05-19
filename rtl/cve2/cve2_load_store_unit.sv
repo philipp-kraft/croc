@@ -18,6 +18,7 @@ module cve2_load_store_unit
 (
   input  logic         clk_i,
   input  logic         rst_ni,
+  input  logic         reliable_mode_i,
 
   // data interface
   output logic         data_req_o,
@@ -43,6 +44,7 @@ module cve2_load_store_unit
   input  logic         lsu_req_i,            // data request                     -> from ID/EX
 
   input  logic [31:0]  adder_result_ex_i,    // address computed in ALU          -> from ID/EX
+  input  logic [31:0]  lsu_addr_i,           // checked request address          -> from ID/EX
 
   output logic         addr_incr_req_o,      // request address increment for
                                               // misaligned accesses              -> to ID/EX
@@ -57,16 +59,19 @@ module cve2_load_store_unit
   output logic         store_err_o,
 
   output logic         busy_o,
+  output logic         addr_match_err_o,
 
   output logic         perf_load_o,
   output logic         perf_store_o
 );
 
   logic [31:0]  data_addr;
+  logic [31:0]  data_addr_q, data_addr_d;
   logic [31:0]  data_addr_w_aligned;
   logic [31:0]  addr_last_q, addr_last_d;
 
   logic         addr_update;
+  logic         data_addr_update;
   logic         ctrl_update;
   logic         rdata_update;
   logic [31:8]  rdata_q;
@@ -100,7 +105,7 @@ module cve2_load_store_unit
 
   ls_fsm_e ls_fsm_cs, ls_fsm_ns;
 
-  assign data_addr   = adder_result_ex_i;
+  assign data_addr   = (ls_fsm_cs == IDLE) ? lsu_addr_i : data_addr_q;
   assign data_offset = data_addr[1:0];
 
   ///////////////////
@@ -213,6 +218,14 @@ module cve2_load_store_unit
       addr_last_q <= '0;
     end else if (addr_update) begin
       addr_last_q <= addr_last_d;
+    end
+  end
+
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      data_addr_q <= '0;
+    end else if (data_addr_update) begin
+      data_addr_q <= data_addr_d;
     end
   end
 
@@ -339,6 +352,8 @@ module cve2_load_store_unit
     lsu_err_d           = lsu_err_q;
 
     addr_update         = 1'b0;
+    data_addr_update    = 1'b0;
+    data_addr_d         = data_addr;
     ctrl_update         = 1'b0;
     rdata_update        = 1'b0;
 
@@ -355,11 +370,14 @@ module cve2_load_store_unit
           lsu_err_d    = 1'b0;
           perf_load_o  = ~lsu_we_i;
           perf_store_o = lsu_we_i;
+          data_addr_update = 1'b1;
+          data_addr_d      = data_addr;
 
           if (data_gnt_i) begin
             ctrl_update         = 1'b1;
             addr_update         = 1'b1;
             handle_misaligned_d = split_misaligned_access;
+            data_addr_d         = split_misaligned_access ? (data_addr + 32'h4) : data_addr;
             ls_fsm_ns           = split_misaligned_access ? WAIT_RVALID_MIS : IDLE;
           end else begin
             ls_fsm_ns           = split_misaligned_access ? WAIT_GNT_MIS    : WAIT_GNT;
@@ -375,6 +393,8 @@ module cve2_load_store_unit
         // WAIT_RVALID* states
         if (data_gnt_i || pmp_err_q) begin
           addr_update         = 1'b1;
+          data_addr_update    = 1'b1;
+          data_addr_d         = data_addr + 32'h4;
           ctrl_update         = 1'b1;
           handle_misaligned_d = 1'b1;
           ls_fsm_ns           = WAIT_RVALID_MIS;
@@ -492,6 +512,8 @@ module cve2_load_store_unit
   assign store_err_o   = data_or_pmp_err &  data_we_q & lsu_resp_valid_o;
 
   assign busy_o = (ls_fsm_cs != IDLE);
+  assign addr_match_err_o = reliable_mode_i & (lsu_req_i | busy_o) &
+                            (adder_result_ex_i != data_addr);
 
   ////////////////
   // Assertions //
